@@ -1,0 +1,264 @@
+import { useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { Navbar } from "@/components/layout/Navbar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { ArrowLeft, Leaf, AlertTriangle, CheckCircle, Shield } from "lucide-react";
+import { toast } from "sonner";
+
+const projectData = {
+  id: "1",
+  title: "Amazon Rainforest Conservation Project",
+  image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop",
+  pricePerTonne: 18.50,
+  country: "Brazil",
+  category: "Avoided Deforestation",
+  vintage: 2023,
+};
+
+const Retire = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [tonnes, setTonnes] = useState(1);
+  const [beneficiary, setBeneficiary] = useState("");
+  const [message, setMessage] = useState("");
+
+  const totalPrice = tonnes * projectData.pricePerTonne;
+
+  const handleRetire = async () => {
+    if (!beneficiary) {
+      toast.error("Please enter a beneficiary name");
+      return;
+    }
+
+    setIsLoading(true);
+    
+    // Simulate retirement
+    setTimeout(() => {
+      setIsLoading(false);
+      toast.success("Carbon credits retired successfully!");
+      navigate("/profile");
+    }, 2000);
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+
+      <main className="pt-24 pb-16">
+        <div className="container mx-auto px-4 max-w-5xl">
+          {/* Back Button */}
+          <Link
+            to={`/marketplace/${id}`}
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Project
+          </Link>
+
+          <h1 className="font-display text-3xl font-bold mb-8">Retire Carbon Credits</h1>
+
+          <div className="grid lg:grid-cols-5 gap-8">
+            {/* Left: Form */}
+            <div className="lg:col-span-3 space-y-6">
+              <div className="glass-card rounded-2xl p-6 space-y-6">
+                {/* Tonnes Input */}
+                <div className="space-y-3">
+                  <Label htmlFor="tonnes" className="text-base font-medium">
+                    How many tonnes would you like to retire?
+                  </Label>
+                  <div className="flex items-center gap-4">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setTonnes(Math.max(1, tonnes - 1))}
+                      disabled={tonnes <= 1}
+                    >
+                      -
+                    </Button>
+                    <Input
+                      id="tonnes"
+                      type="number"
+                      min={1}
+                      value={tonnes}
+                      onChange={(e) => setTonnes(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-24 h-12 text-center text-lg font-semibold"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setTonnes(tonnes + 1)}
+                    >
+                      +
+                    </Button>
+                    <span className="text-muted-foreground">tonnes</span>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Beneficiary */}
+                <div className="space-y-3">
+                  <Label htmlFor="beneficiary" className="text-base font-medium">
+                    Beneficiary Name
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    The name of the person or organization retiring these credits
+                  </p>
+                  <Input
+                    id="beneficiary"
+                    placeholder="Enter beneficiary name"
+                    value={beneficiary}
+                    onChange={(e) => setBeneficiary(e.target.value)}
+                    className="h-12"
+                  />
+                </div>
+
+                {/* Public Message */}
+                <div className="space-y-3">
+                  <Label htmlFor="message" className="text-base font-medium">
+                    Public Message (Optional)
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Add a message to be displayed on your retirement certificate
+                  </p>
+                  <Textarea
+                    id="message"
+                    placeholder="Why are you retiring these credits?"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    rows={4}
+                  />
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                    <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                    <span>
+                      Do not include personally identifiable information in your message. 
+                      This will be publicly visible on the blockchain.
+                    </span>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* FAQ Accordions */}
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="payment">
+                    <AccordionTrigger>Payment & Privacy Information</AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground">
+                      <ul className="list-disc pl-4 space-y-2">
+                        <li>Payment is processed securely via our payment provider</li>
+                        <li>Your payment details are never stored on our servers</li>
+                        <li>Transactions are recorded on the blockchain for transparency</li>
+                        <li>You'll receive a receipt via email after successful retirement</li>
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                  <AccordionItem value="after">
+                    <AccordionTrigger>What happens after retirement?</AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground">
+                      <ul className="list-disc pl-4 space-y-2">
+                        <li>Credits are permanently removed from circulation</li>
+                        <li>A retirement certificate is generated with your details</li>
+                        <li>The retirement is recorded on the carbon registry</li>
+                        <li>You can view and download your certificate from your profile</li>
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+            </div>
+
+            {/* Right: Summary */}
+            <div className="lg:col-span-2">
+              <div className="glass-card rounded-2xl p-6 space-y-6 glow-green-subtle sticky top-28">
+                {/* Project Preview */}
+                <div className="flex gap-4">
+                  <img
+                    src={projectData.image}
+                    alt={projectData.title}
+                    className="w-20 h-20 rounded-xl object-cover"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-sm leading-snug line-clamp-2">
+                      {projectData.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {projectData.country} • {projectData.vintage}
+                    </p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Price Breakdown */}
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Price per tonne</span>
+                    <span>${projectData.pricePerTonne.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Quantity</span>
+                    <span>{tonnes} tonnes</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between items-baseline">
+                    <span className="font-medium">Total</span>
+                    <span className="text-2xl font-bold text-gradient">
+                      ${totalPrice.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Verification Badge */}
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 text-primary text-sm">
+                  <Shield className="w-4 h-4" />
+                  <span>Verified & Certified Project</span>
+                </div>
+
+                {/* CTA */}
+                <Button
+                  className="w-full h-14 gradient-primary text-primary-foreground btn-glow font-semibold text-lg"
+                  onClick={handleRetire}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                      Processing...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Leaf className="w-5 h-5" />
+                      Retire Carbon
+                    </span>
+                  )}
+                </Button>
+
+                {/* Success Message */}
+                <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <CheckCircle className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                  <span>
+                    By retiring, you're permanently removing these carbon credits from 
+                    circulation and contributing to climate action.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default Retire;
