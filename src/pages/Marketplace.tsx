@@ -26,7 +26,6 @@ const mockProjects = [
     country: "Brazil",
     category: "Avoided Deforestation",
     vintage: 2023,
-    sdgCount: 8,
     verified: true,
   },
   {
@@ -38,7 +37,6 @@ const mockProjects = [
     country: "Indonesia",
     category: "Blue Carbon",
     vintage: 2024,
-    sdgCount: 6,
     verified: true,
   },
   {
@@ -50,7 +48,6 @@ const mockProjects = [
     country: "Kenya",
     category: "Renewable Energy",
     vintage: 2023,
-    sdgCount: 5,
     verified: true,
   },
   {
@@ -62,7 +59,6 @@ const mockProjects = [
     country: "Colombia",
     category: "Reforestation",
     vintage: 2024,
-    sdgCount: 7,
     verified: true,
   },
   {
@@ -74,7 +70,6 @@ const mockProjects = [
     country: "Vietnam",
     category: "Renewable Energy",
     vintage: 2023,
-    sdgCount: 4,
     verified: true,
   },
   {
@@ -86,7 +81,6 @@ const mockProjects = [
     country: "Kenya",
     category: "Clean Cookstoves",
     vintage: 2024,
-    sdgCount: 6,
     verified: true,
   },
   {
@@ -98,7 +92,6 @@ const mockProjects = [
     country: "Indonesia",
     category: "Avoided Deforestation",
     vintage: 2023,
-    sdgCount: 5,
     verified: true,
   },
   {
@@ -110,7 +103,6 @@ const mockProjects = [
     country: "Brazil",
     category: "Reforestation",
     vintage: 2024,
-    sdgCount: 9,
     verified: true,
   },
   {
@@ -122,7 +114,6 @@ const mockProjects = [
     country: "Peru",
     category: "Renewable Energy",
     vintage: 2023,
-    sdgCount: 4,
     verified: true,
   },
 ];

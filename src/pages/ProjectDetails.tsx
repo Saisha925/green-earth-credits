@@ -39,7 +39,6 @@ The project delivers multiple benefits beyond carbon sequestration:
   sellerHandle: "@amazon_protect",
   verified: true,
   certified: true,
-  sdgs: [1, 2, 3, 6, 8, 13, 15, 17],
   coordinates: { lat: -3.4653, lng: -62.2159 },
 };
 
@@ -97,19 +96,6 @@ const ProjectDetails = () => {
                   </p>
                 </div>
 
-                <Separator />
-
-                {/* SDGs */}
-                <div>
-                  <h3 className="font-medium mb-3">UN Sustainable Development Goals</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {projectData.sdgs.map((sdg) => (
-                      <Badge key={sdg} variant="secondary" className="px-3 py-1">
-                        SDG {sdg}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
 

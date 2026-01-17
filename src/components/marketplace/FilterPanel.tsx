@@ -13,7 +13,6 @@ import {
 const countries = ["Brazil", "Indonesia", "Kenya", "Colombia", "Vietnam", "Peru"];
 const categories = ["Reforestation", "Avoided Deforestation", "Blue Carbon", "Renewable Energy", "Clean Cookstoves"];
 const registries = ["Verra", "Gold Standard", "American Carbon Registry", "Climate Action Reserve"];
-const sdgs = ["No Poverty", "Zero Hunger", "Good Health", "Quality Education", "Gender Equality", "Clean Water", "Clean Energy", "Decent Work", "Industry Innovation", "Reduced Inequalities", "Sustainable Cities", "Responsible Consumption", "Climate Action", "Life Below Water", "Life on Land", "Peace Justice", "Partnerships"];
 
 interface FilterSectionProps {
   title: string;
@@ -138,20 +137,6 @@ export const FilterPanel = ({ onClose, isMobile }: FilterPanelProps) => {
               <Checkbox id={`registry-${registry}`} />
               <Label htmlFor={`registry-${registry}`} className="text-sm cursor-pointer">
                 {registry}
-              </Label>
-            </div>
-          ))}
-        </div>
-      </FilterSection>
-
-      {/* SDGs */}
-      <FilterSection title="UN SDGs" defaultOpen={false}>
-        <div className="space-y-2 max-h-48 overflow-y-auto">
-          {sdgs.map((sdg, index) => (
-            <div key={sdg} className="flex items-center gap-2">
-              <Checkbox id={`sdg-${index}`} />
-              <Label htmlFor={`sdg-${index}`} className="text-sm cursor-pointer">
-                {index + 1}. {sdg}
               </Label>
             </div>
           ))}
