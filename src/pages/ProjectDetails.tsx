@@ -4,6 +4,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { ProjectMap } from "@/components/map/ProjectMap";
 import {
   MapPin,
   Calendar,
@@ -61,9 +62,20 @@ const ProjectDetails = () => {
           </Link>
 
           <div className="grid lg:grid-cols-2 gap-8">
-            {/* Left: Map Placeholder & Image */}
+            {/* Left: Map & Image */}
             <div className="space-y-6">
-              {/* Map Placeholder */}
+              {/* Interactive Map */}
+              <div className="aspect-video glass-card">
+                <ProjectMap
+                  latitude={projectData.coordinates.lat}
+                  longitude={projectData.coordinates.lng}
+                  projectName={projectData.title}
+                  country={projectData.country}
+                  className="h-full"
+                />
+              </div>
+
+              {/* Project Image */}
               <div className="aspect-video rounded-2xl overflow-hidden glass-card relative">
                 <img
                   src={projectData.image}
