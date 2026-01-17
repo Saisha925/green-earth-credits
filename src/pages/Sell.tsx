@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { LocationPicker } from "@/components/map/LocationPicker";
 import { Store, MapPin, DollarSign, Calendar, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -46,6 +47,14 @@ const Sell = () => {
     latitude: "",
     longitude: "",
   });
+
+  const handleLocationChange = (lat: number, lng: number) => {
+    setFormData({
+      ...formData,
+      latitude: lat.toFixed(4),
+      longitude: lng.toFixed(4),
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -234,13 +243,13 @@ const Sell = () => {
                 </div>
               </div>
 
-              {/* Map Placeholder */}
-              <div className="aspect-video rounded-xl bg-muted flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <MapPin className="w-8 h-8 mx-auto mb-2" />
-                  <p className="text-sm">Map will display project location</p>
-                </div>
-              </div>
+              {/* Interactive Map */}
+              <LocationPicker
+                latitude={formData.latitude ? parseFloat(formData.latitude) : undefined}
+                longitude={formData.longitude ? parseFloat(formData.longitude) : undefined}
+                onLocationChange={handleLocationChange}
+                className="h-64"
+              />
             </div>
 
             {/* Submit */}
