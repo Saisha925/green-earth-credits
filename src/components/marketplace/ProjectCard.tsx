@@ -11,7 +11,6 @@ interface ProjectCardProps {
   country: string;
   category: string;
   vintage: number;
-  sdgCount: number;
   verified: boolean;
 }
 
@@ -24,7 +23,6 @@ export const ProjectCard = ({
   country,
   category,
   vintage,
-  sdgCount,
   verified,
 }: ProjectCardProps) => {
   return (
@@ -69,9 +67,6 @@ export const ProjectCard = ({
             <Badge variant="secondary" className="text-xs">
               <Calendar className="w-3 h-3 mr-1" />
               {vintage}
-            </Badge>
-            <Badge variant="outline" className="text-xs text-primary border-primary/30">
-              {sdgCount} SDGs
             </Badge>
           </div>
         </div>
