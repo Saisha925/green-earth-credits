@@ -13,12 +13,12 @@ export const Footer = () => {
                 <Leaf className="w-5 h-5 text-primary-foreground" />
               </div>
               <span className="font-display font-bold text-xl">
-                Green<span className="text-gradient">Credits</span>
+                Path<span className="text-gradient">2Zero</span>
               </span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Empowering climate action through transparent carbon credit trading. 
-              Aligned with UN SDG 13.
+              Your journey to carbon neutrality starts here. Calculate, offset, 
+              and track your path to net-zero emissions.
             </p>
             <div className="flex items-center gap-4">
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
@@ -112,10 +112,10 @@ export const Footer = () => {
 
         <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} GreenCredits. All rights reserved.
+            © {new Date().getFullYear()} Path2Zero. All rights reserved.
           </p>
           <p className="text-sm text-muted-foreground">
-            Building a sustainable future, one credit at a time.
+            Your journey to carbon neutrality starts here.
           </p>
         </div>
       </div>

@@ -35,27 +35,27 @@ export const HeroSection = () => {
 
           {/* Headline */}
           <h1 className="font-display text-5xl md:text-7xl font-bold leading-tight">
-            Authenticate. Trade.{" "}
-            <span className="text-gradient">Act for Climate.</span>
+            Your Journey to{" "}
+            <span className="text-gradient">Carbon Neutrality</span>
           </h1>
 
           {/* Subheadline */}
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            The trusted marketplace for carbon credit certificates. Verify authenticity, 
-            trade transparently, and make a real impact on climate change.
+            Calculate your carbon footprint, discover personalized offset recommendations, 
+            and take meaningful action for climate change with Path2Zero.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Link to="/marketplace">
+            <Link to="/calculator">
               <Button size="lg" className="gradient-primary text-primary-foreground btn-glow h-14 px-8 text-lg font-semibold">
-                Explore Marketplace
+                Calculate My Footprint
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Link to="/register">
+            <Link to="/marketplace">
               <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-primary/30 hover:bg-primary/5">
-                Start Selling
+                Explore Offset Projects
               </Button>
             </Link>
           </div>

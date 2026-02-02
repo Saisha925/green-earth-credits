@@ -1,96 +1,183 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Calculator as CalculatorIcon } from "lucide-react";
+import { ModeSelector } from "@/components/calculator/ModeSelector";
+import { IndividualForm } from "@/components/calculator/IndividualForm";
+import { OrganizationForm } from "@/components/calculator/OrganizationForm";
+import { ResultsPanel } from "@/components/calculator/ResultsPanel";
+import { ProjectRecommendations } from "@/components/calculator/ProjectRecommendations";
+import { ReportGenerator } from "@/components/calculator/ReportGenerator";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Calculator as CalculatorIcon, Zap, Factory, Truck, Leaf, ArrowRight } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+  IndividualInputs,
+  OrganizationInputs,
+  CalculationResult,
+  ProjectRecommendation,
+  calculateIndividualEmissions,
+  calculateOrganizationEmissions,
+  getProjectRecommendations,
+} from "@/lib/carbonCalculations";
 
-const materialTypes = [
-  "Steel",
-  "Aluminum",
-  "Plastic",
-  "Paper",
-  "Glass",
-  "Textiles",
-  "Electronics",
-  "Wood",
+// Mock projects data for recommendations
+const mockProjects = [
+  {
+    id: "1",
+    title: "Amazon Rainforest Conservation Project",
+    description: "Protecting 500,000 hectares of primary rainforest in the Amazon basin.",
+    image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600&h=400&fit=crop",
+    pricePerTonne: 18.50,
+    country: "Brazil",
+    category: "Avoided Deforestation",
+    vintage: 2023,
+    verified: true,
+  },
+  {
+    id: "2",
+    title: "Mangrove Restoration Initiative",
+    description: "Restoring coastal mangrove ecosystems across Southeast Asia.",
+    image: "https://images.unsplash.com/photo-1559825481-12a05cc00344?w=600&h=400&fit=crop",
+    pricePerTonne: 24.00,
+    country: "Indonesia",
+    category: "Blue Carbon",
+    vintage: 2024,
+    verified: true,
+  },
+  {
+    id: "3",
+    title: "Wind Farm Development - Kenya",
+    description: "Large-scale wind energy project providing clean electricity.",
+    image: "https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=600&h=400&fit=crop",
+    pricePerTonne: 12.75,
+    country: "Kenya",
+    category: "Renewable Energy",
+    vintage: 2023,
+    verified: true,
+  },
+  {
+    id: "4",
+    title: "Community Reforestation Colombia",
+    description: "Planting 2 million native trees with local communities.",
+    image: "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=600&h=400&fit=crop",
+    pricePerTonne: 15.25,
+    country: "Colombia",
+    category: "Reforestation",
+    vintage: 2024,
+    verified: true,
+  },
+  {
+    id: "5",
+    title: "Solar Energy Access Program",
+    description: "Deploying distributed solar systems across rural Vietnam.",
+    image: "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=600&h=400&fit=crop",
+    pricePerTonne: 10.50,
+    country: "Vietnam",
+    category: "Renewable Energy",
+    vintage: 2023,
+    verified: true,
+  },
+  {
+    id: "6",
+    title: "Clean Cookstoves Distribution",
+    description: "Providing efficient cookstoves to 100,000 households.",
+    image: "https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=600&h=400&fit=crop",
+    pricePerTonne: 8.00,
+    country: "Kenya",
+    category: "Clean Cookstoves",
+    vintage: 2024,
+    verified: true,
+  },
+  {
+    id: "7",
+    title: "Peatland Restoration Borneo",
+    description: "Rewetting and restoring degraded peatlands in Borneo.",
+    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&h=400&fit=crop",
+    pricePerTonne: 28.00,
+    country: "Indonesia",
+    category: "Avoided Deforestation",
+    vintage: 2023,
+    verified: true,
+  },
+  {
+    id: "8",
+    title: "Atlantic Forest Regeneration",
+    description: "Regenerating native Atlantic Forest through sustainable agroforestry.",
+    image: "https://images.unsplash.com/photo-1425913397330-cf8af2ff40a1?w=600&h=400&fit=crop",
+    pricePerTonne: 20.00,
+    country: "Brazil",
+    category: "Reforestation",
+    vintage: 2024,
+    verified: true,
+  },
+  {
+    id: "9",
+    title: "Hydropower Expansion Peru",
+    description: "Run-of-river hydropower project generating clean energy.",
+    image: "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=600&h=400&fit=crop",
+    pricePerTonne: 14.50,
+    country: "Peru",
+    category: "Renewable Energy",
+    vintage: 2023,
+    verified: true,
+  },
 ];
-
-const sectors = [
-  "Manufacturing",
-  "Technology",
-  "Agriculture",
-  "Transportation",
-  "Construction",
-  "Retail",
-  "Healthcare",
-  "Hospitality",
-];
-
-const transportModes = [
-  "Road (Truck)",
-  "Rail",
-  "Sea (Ship)",
-  "Air (Cargo)",
-  "Pipeline",
-];
-
-const COLORS = ["#0B5D3B", "#1DBF73", "#10B981", "#34D399"];
 
 const Calculator = () => {
+  const [mode, setMode] = useState<'individual' | 'organization'>('individual');
   const [isCalculating, setIsCalculating] = useState(false);
-  const [result, setResult] = useState<{
-    total: number;
-    breakdown: { name: string; value: number }[];
-    suggestedCredits: number;
-  } | null>(null);
+  const [result, setResult] = useState<CalculationResult | null>(null);
+  const [recommendations, setRecommendations] = useState<ProjectRecommendation[]>([]);
 
-  const [formData, setFormData] = useState({
-    operationHours: "",
-    energyUsage: "",
-    materialType: "",
-    materialWeight: "",
-    sector: "",
-    productionOutput: "",
-    transportDistance: "",
-    transportMode: "",
+  const [individualData, setIndividualData] = useState<IndividualInputs>({
+    electricityUsage: 0,
+    commuteDistance: 0,
+    transportMode: 'car_petrol',
+    dietType: 'mixed',
+    shortHaulFlights: 0,
+    mediumHaulFlights: 0,
+    longHaulFlights: 0,
   });
+
+  const [organizationData, setOrganizationData] = useState<OrganizationInputs>({
+    operationHours: 0,
+    energyUsage: 0,
+    materialType: 'steel',
+    materialWeight: 0,
+    sector: '',
+    productionOutput: 0,
+    transportDistance: 0,
+    transportMode: 'truck',
+  });
+
+  const handleModeChange = (newMode: 'individual' | 'organization') => {
+    setMode(newMode);
+    setResult(null);
+    setRecommendations([]);
+  };
 
   const handleCalculate = async () => {
     setIsCalculating(true);
 
-    // Simulate ML calculation
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    // Simulate calculation time
+    await new Promise((resolve) => setTimeout(resolve, 1200));
 
-    // Mock result based on inputs
-    const energyEmissions = (parseFloat(formData.energyUsage) || 0) * (parseFloat(formData.operationHours) || 0) * 0.0004;
-    const materialEmissions = (parseFloat(formData.materialWeight) || 0) * 0.002;
-    const transportEmissions = (parseFloat(formData.transportDistance) || 0) * 0.0001;
-    const productionEmissions = (parseFloat(formData.productionOutput) || 0) * 0.001;
+    let calcResult: CalculationResult;
 
-    const total = energyEmissions + materialEmissions + transportEmissions + productionEmissions;
+    if (mode === 'individual') {
+      calcResult = calculateIndividualEmissions(individualData);
+    } else {
+      calcResult = calculateOrganizationEmissions(organizationData);
+    }
 
-    setResult({
-      total: Math.round(total * 100) / 100,
-      breakdown: [
-        { name: "Energy", value: Math.round(energyEmissions * 100) / 100 },
-        { name: "Materials", value: Math.round(materialEmissions * 100) / 100 },
-        { name: "Transport", value: Math.round(transportEmissions * 100) / 100 },
-        { name: "Production", value: Math.round(productionEmissions * 100) / 100 },
-      ],
-      suggestedCredits: Math.ceil(total),
-    });
+    setResult(calcResult);
+
+    // Get recommendations
+    const recs = getProjectRecommendations(
+      mockProjects,
+      calcResult.totalEmissions,
+      calcResult.dominantSector
+    );
+    setRecommendations(recs);
 
     setIsCalculating(false);
   };
@@ -101,148 +188,33 @@ const Calculator = () => {
 
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
+          {/* Header */}
+          <div className="text-center mb-8">
             <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-6 glow-green-subtle">
               <CalculatorIcon className="w-8 h-8 text-primary-foreground" />
             </div>
             <h1 className="font-display text-4xl font-bold mb-4">Carbon Footprint Calculator</h1>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Calculate your carbon footprint using our ML-powered model and discover
-              how many credits you need to offset your emissions.
+              Calculate your carbon footprint and discover personalized offset recommendations
+              to start your journey to carbon neutrality.
             </p>
           </div>
 
+          {/* Mode Selector */}
+          <ModeSelector mode={mode} onModeChange={handleModeChange} />
+
+          {/* Calculator Grid */}
           <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
-            {/* Left: Inputs */}
-            <div className="glass-card rounded-2xl p-8 space-y-6">
-              <h2 className="font-semibold text-lg flex items-center gap-2">
-                <Zap className="w-5 h-5 text-primary" />
-                Energy & Operations
-              </h2>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="operationHours">Operation Hours (per year)</Label>
-                  <Input
-                    id="operationHours"
-                    type="number"
-                    placeholder="e.g., 2000"
-                    value={formData.operationHours}
-                    onChange={(e) => setFormData({ ...formData, operationHours: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="energyUsage">Energy Usage (kWh/hour)</Label>
-                  <Input
-                    id="energyUsage"
-                    type="number"
-                    placeholder="e.g., 150"
-                    value={formData.energyUsage}
-                    onChange={(e) => setFormData({ ...formData, energyUsage: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <Separator />
-
-              <h2 className="font-semibold text-lg flex items-center gap-2">
-                <Factory className="w-5 h-5 text-primary" />
-                Materials & Production
-              </h2>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="materialType">Material Type</Label>
-                  <Select
-                    value={formData.materialType}
-                    onValueChange={(value) => setFormData({ ...formData, materialType: value })}
-                  >
-                    <SelectTrigger id="materialType">
-                      <SelectValue placeholder="Select material" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {materialTypes.map((mat) => (
-                        <SelectItem key={mat} value={mat}>{mat}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="materialWeight">Material Weight (kg)</Label>
-                  <Input
-                    id="materialWeight"
-                    type="number"
-                    placeholder="e.g., 5000"
-                    value={formData.materialWeight}
-                    onChange={(e) => setFormData({ ...formData, materialWeight: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sector">Business Sector</Label>
-                  <Select
-                    value={formData.sector}
-                    onValueChange={(value) => setFormData({ ...formData, sector: value })}
-                  >
-                    <SelectTrigger id="sector">
-                      <SelectValue placeholder="Select sector" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sectors.map((sec) => (
-                        <SelectItem key={sec} value={sec}>{sec}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="productionOutput">Production Output (units)</Label>
-                  <Input
-                    id="productionOutput"
-                    type="number"
-                    placeholder="e.g., 10000"
-                    value={formData.productionOutput}
-                    onChange={(e) => setFormData({ ...formData, productionOutput: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <Separator />
-
-              <h2 className="font-semibold text-lg flex items-center gap-2">
-                <Truck className="w-5 h-5 text-primary" />
-                Transportation
-              </h2>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="transportDistance">Distance (km)</Label>
-                  <Input
-                    id="transportDistance"
-                    type="number"
-                    placeholder="e.g., 1000"
-                    value={formData.transportDistance}
-                    onChange={(e) => setFormData({ ...formData, transportDistance: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="transportMode">Transport Mode</Label>
-                  <Select
-                    value={formData.transportMode}
-                    onValueChange={(value) => setFormData({ ...formData, transportMode: value })}
-                  >
-                    <SelectTrigger id="transportMode">
-                      <SelectValue placeholder="Select mode" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {transportModes.map((mode) => (
-                        <SelectItem key={mode} value={mode}>{mode}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+            {/* Left: Input Form */}
+            <div className="glass-card rounded-2xl p-8">
+              {mode === 'individual' ? (
+                <IndividualForm formData={individualData} onChange={setIndividualData} />
+              ) : (
+                <OrganizationForm formData={organizationData} onChange={setOrganizationData} />
+              )}
 
               <Button
-                className="w-full h-12 gradient-primary text-primary-foreground btn-glow font-semibold"
+                className="w-full h-12 gradient-primary text-primary-foreground btn-glow font-semibold mt-6"
                 onClick={handleCalculate}
                 disabled={isCalculating}
               >
@@ -252,102 +224,34 @@ const Calculator = () => {
                     Calculating...
                   </span>
                 ) : (
-                  "Calculate Footprint"
+                  "Calculate My Footprint"
                 )}
               </Button>
             </div>
 
             {/* Right: Results */}
-            <div className="glass-card rounded-2xl p-8 space-y-6">
-              <h2 className="font-semibold text-lg">Results</h2>
-
-              {result ? (
-                <>
-                  {/* Total */}
-                  <div className="text-center p-6 rounded-xl bg-primary/5 border border-primary/20 glow-green-subtle">
-                    <p className="text-sm text-muted-foreground mb-2">Total Carbon Footprint</p>
-                    <p className="text-5xl font-bold text-gradient">{result.total}</p>
-                    <p className="text-lg text-muted-foreground">tonnes CO₂e / year</p>
-                  </div>
-
-                  {/* Chart */}
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={result.breakdown}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={80}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {result.breakdown.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          formatter={(value: number) => [`${value} t CO₂e`, ""]}
-                          contentStyle={{
-                            backgroundColor: "hsl(var(--card))",
-                            borderColor: "hsl(var(--border))",
-                            borderRadius: "0.5rem",
-                          }}
-                        />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* Breakdown */}
-                  <div className="space-y-3">
-                    {result.breakdown.map((item, index) => (
-                      <div key={item.name} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: COLORS[index] }}
-                          />
-                          <span>{item.name}</span>
-                        </div>
-                        <span className="font-medium">{item.value} t</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <Separator />
-
-                  {/* Offset Suggestion */}
-                  <div className="p-4 rounded-xl bg-primary/10 border border-primary/20">
-                    <div className="flex items-center gap-3 mb-3">
-                      <Leaf className="w-5 h-5 text-primary" />
-                      <span className="font-medium">Offset Recommendation</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      To become carbon neutral, you need to retire approximately{" "}
-                      <span className="font-bold text-foreground">{result.suggestedCredits} credits</span>.
-                    </p>
-                    <Link to="/marketplace">
-                      <Button className="w-full gradient-primary text-primary-foreground btn-glow">
-                        Go to Marketplace
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </Button>
-                    </Link>
-                  </div>
-                </>
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center py-12">
-                  <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
-                    <CalculatorIcon className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <p className="text-muted-foreground">
-                    Enter your data and click calculate to see your carbon footprint.
-                  </p>
-                </div>
-              )}
+            <div className="glass-card rounded-2xl p-8">
+              <h2 className="font-semibold text-lg mb-4">Your Results</h2>
+              <ResultsPanel result={result} mode={mode} />
             </div>
           </div>
+
+          {/* Report Generator */}
+          {result && (
+            <div className="max-w-6xl mx-auto">
+              <ReportGenerator result={result} mode={mode} recommendations={recommendations} />
+            </div>
+          )}
+
+          {/* Project Recommendations */}
+          {result && recommendations.length > 0 && (
+            <div className="max-w-6xl mx-auto">
+              <ProjectRecommendations
+                recommendations={recommendations}
+                totalEmissions={result.totalEmissions}
+              />
+            </div>
+          )}
         </div>
       </main>
 
