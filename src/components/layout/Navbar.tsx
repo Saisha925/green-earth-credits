@@ -49,7 +49,7 @@ export const Navbar = () => {
             <Leaf className="w-5 h-5 text-primary-foreground" />
           </div>
           <span className="font-display font-bold text-xl text-foreground">
-            Green<span className="text-gradient">Credits</span>
+            Path<span className="text-gradient">2Zero</span>
           </span>
         </Link>
 

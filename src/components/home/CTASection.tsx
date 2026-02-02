@@ -16,25 +16,25 @@ export const CTASection = () => {
           </div>
           
           <h2 className="font-display text-4xl md:text-5xl font-bold">
-            Ready to Make a{" "}
-            <span className="text-gradient">Climate Impact?</span>
+            Start Your Journey to{" "}
+            <span className="text-gradient">Carbon Neutrality</span>
           </h2>
           
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Join thousands of organizations and individuals who are trading verified carbon credits 
-            and contributing to a sustainable future.
+            Calculate your footprint, get personalized recommendations, and offset your emissions 
+            with verified carbon credit projects that make a real difference.
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/register">
+            <Link to="/calculator">
               <Button size="lg" className="gradient-primary text-primary-foreground btn-glow h-14 px-8 text-lg font-semibold">
-                Create Free Account
+                Calculate My Footprint
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <Link to="/marketplace">
               <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-primary/30 hover:bg-primary/5">
-                Browse Credits
+                Browse Projects
               </Button>
             </Link>
           </div>

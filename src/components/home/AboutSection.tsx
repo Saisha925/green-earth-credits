@@ -32,16 +32,16 @@ export const AboutSection = () => {
           <div className="space-y-8">
             <div className="space-y-4">
               <p className="text-primary font-semibold uppercase tracking-wider text-sm">
-                About GreenCredits
+                About Path2Zero
               </p>
               <h2 className="font-display text-4xl md:text-5xl font-bold leading-tight">
-                Empowering Climate Action Through{" "}
-                <span className="text-gradient">Transparency</span>
+                Your Personalized Path to{" "}
+                <span className="text-gradient">Net-Zero</span>
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                GreenCredits is your trusted partner in the fight against climate change. 
-                We provide a secure, transparent marketplace where verified carbon credits 
-                meet verified buyers, creating real environmental impact.
+                Path2Zero combines intelligent carbon footprint calculation with 
+                personalized offset recommendations, helping individuals and organizations 
+                achieve their sustainability goals with confidence.
               </p>
             </div>
 
