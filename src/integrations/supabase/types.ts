@@ -14,7 +14,147 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      esg_reports: {
+        Row: {
+          anti_corruption_policy: boolean | null
+          board_diversity_percentage: number | null
+          board_size: number | null
+          climate_risk_level: string | null
+          community_initiatives: string | null
+          compliance_violations: number | null
+          country: string
+          created_at: string
+          data_privacy_incidents: number | null
+          electronic_waste: number | null
+          environmental_narrative: string | null
+          environmental_score: number | null
+          executive_summary: string | null
+          gender_diversity_percentage: number | null
+          governance_narrative: string | null
+          governance_score: number | null
+          hazardous_waste: number | null
+          health_safety_incidents: number | null
+          id: string
+          independent_directors_percentage: number | null
+          industry: string
+          key_risks: string | null
+          organization_name: string
+          overall_esg_score: number | null
+          recommendations: string | null
+          renewable_energy_percentage: number | null
+          reporting_framework: string
+          reporting_year: number
+          risk_category: string | null
+          scope1_emissions: number | null
+          scope2_emissions: number | null
+          scope3_emissions: number | null
+          social_narrative: string | null
+          social_score: number | null
+          status: string | null
+          supply_chain_labour_policy: boolean | null
+          tax_transparency: boolean | null
+          total_emissions: number | null
+          total_employees: number | null
+          training_hours_per_employee: number | null
+          updated_at: string
+          water_consumption: number | null
+          water_stress_area: boolean | null
+          whistleblower_policy: boolean | null
+        }
+        Insert: {
+          anti_corruption_policy?: boolean | null
+          board_diversity_percentage?: number | null
+          board_size?: number | null
+          climate_risk_level?: string | null
+          community_initiatives?: string | null
+          compliance_violations?: number | null
+          country: string
+          created_at?: string
+          data_privacy_incidents?: number | null
+          electronic_waste?: number | null
+          environmental_narrative?: string | null
+          environmental_score?: number | null
+          executive_summary?: string | null
+          gender_diversity_percentage?: number | null
+          governance_narrative?: string | null
+          governance_score?: number | null
+          hazardous_waste?: number | null
+          health_safety_incidents?: number | null
+          id?: string
+          independent_directors_percentage?: number | null
+          industry: string
+          key_risks?: string | null
+          organization_name: string
+          overall_esg_score?: number | null
+          recommendations?: string | null
+          renewable_energy_percentage?: number | null
+          reporting_framework?: string
+          reporting_year: number
+          risk_category?: string | null
+          scope1_emissions?: number | null
+          scope2_emissions?: number | null
+          scope3_emissions?: number | null
+          social_narrative?: string | null
+          social_score?: number | null
+          status?: string | null
+          supply_chain_labour_policy?: boolean | null
+          tax_transparency?: boolean | null
+          total_emissions?: number | null
+          total_employees?: number | null
+          training_hours_per_employee?: number | null
+          updated_at?: string
+          water_consumption?: number | null
+          water_stress_area?: boolean | null
+          whistleblower_policy?: boolean | null
+        }
+        Update: {
+          anti_corruption_policy?: boolean | null
+          board_diversity_percentage?: number | null
+          board_size?: number | null
+          climate_risk_level?: string | null
+          community_initiatives?: string | null
+          compliance_violations?: number | null
+          country?: string
+          created_at?: string
+          data_privacy_incidents?: number | null
+          electronic_waste?: number | null
+          environmental_narrative?: string | null
+          environmental_score?: number | null
+          executive_summary?: string | null
+          gender_diversity_percentage?: number | null
+          governance_narrative?: string | null
+          governance_score?: number | null
+          hazardous_waste?: number | null
+          health_safety_incidents?: number | null
+          id?: string
+          independent_directors_percentage?: number | null
+          industry?: string
+          key_risks?: string | null
+          organization_name?: string
+          overall_esg_score?: number | null
+          recommendations?: string | null
+          renewable_energy_percentage?: number | null
+          reporting_framework?: string
+          reporting_year?: number
+          risk_category?: string | null
+          scope1_emissions?: number | null
+          scope2_emissions?: number | null
+          scope3_emissions?: number | null
+          social_narrative?: string | null
+          social_score?: number | null
+          status?: string | null
+          supply_chain_labour_policy?: boolean | null
+          tax_transparency?: boolean | null
+          total_emissions?: number | null
+          total_employees?: number | null
+          training_hours_per_employee?: number | null
+          updated_at?: string
+          water_consumption?: number | null
+          water_stress_area?: boolean | null
+          whistleblower_policy?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -12,6 +12,7 @@ import {
   ArrowRight,
   TrendingUp,
   Leaf,
+  FileText,
 } from "lucide-react";
 
 const dashboardCards = [
@@ -21,6 +22,13 @@ const dashboardCards = [
     description: "Browse and purchase verified carbon credits",
     href: "/marketplace",
     color: "from-emerald-500 to-green-600",
+  },
+  {
+    icon: FileText,
+    title: "ESG Report",
+    description: "Generate comprehensive sustainability reports",
+    href: "/esg-report",
+    color: "from-teal-500 to-cyan-600",
   },
   {
     icon: Shield,
@@ -173,7 +181,7 @@ const Dashboard = () => {
           </Tabs>
 
           {/* Navigation Cards */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6">
             {dashboardCards.map((card, index) => (
               <Link
                 key={card.title}

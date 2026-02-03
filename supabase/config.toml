@@ -1,1 +1,4 @@
 project_id = "vqziiagaljaqazzinhjf"
+
+[functions.generate-esg-summary]
+verify_jwt = false
