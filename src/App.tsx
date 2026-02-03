@@ -15,6 +15,7 @@ import Authenticate from "./pages/Authenticate";
 import Sell from "./pages/Sell";
 import Calculator from "./pages/Calculator";
 import About from "./pages/About";
+import ESGReport from "./pages/ESGReport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/sell" element={<Sell />} />
           <Route path="/calculator" element={<Calculator />} />
           <Route path="/about" element={<About />} />
+          <Route path="/esg-report" element={<ESGReport />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
