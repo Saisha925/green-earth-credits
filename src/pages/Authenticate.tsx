@@ -1,21 +1,28 @@
 import { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, CheckCircle, XCircle, Loader2, Shield } from "lucide-react";
+import { Upload, FileText, CheckCircle, XCircle, Loader2, Shield, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { useDemoMode } from "@/contexts/DemoModeContext";
 
 const Authenticate = () => {
   const navigate = useNavigate();
+  const { user, isLoading: authLoading } = useAuth();
+  const { isDemoMode } = useDemoMode();
+  
   const [file, setFile] = useState<File | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [status, setStatus] = useState<"idle" | "uploading" | "verifying" | "success" | "error">("idle");
 
+  const isAuthenticated = user || isDemoMode;
+
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragOver(true);
-  }, []);
+    if (isAuthenticated) setIsDragOver(true);
+  }, [isAuthenticated]);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -25,6 +32,12 @@ const Authenticate = () => {
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
+    
+    if (!isAuthenticated) {
+      toast.error("Please log in to upload certificates");
+      return;
+    }
+    
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile && (droppedFile.type === "application/pdf" || droppedFile.type.startsWith("image/"))) {
       setFile(droppedFile);
@@ -32,9 +45,14 @@ const Authenticate = () => {
     } else {
       toast.error("Please upload a PDF or image file");
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isAuthenticated) {
+      toast.error("Please log in to upload certificates");
+      return;
+    }
+    
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
@@ -43,6 +61,11 @@ const Authenticate = () => {
   };
 
   const handleAuthenticate = async () => {
+    if (!isAuthenticated) {
+      toast.error("Please log in to authenticate certificates");
+      return;
+    }
+    
     if (!file) {
       toast.error("Please upload a certificate first");
       return;
@@ -89,13 +112,36 @@ const Authenticate = () => {
           </div>
 
           <div className="glass-card rounded-2xl p-8 space-y-6">
+            {/* Auth Warning */}
+            {!isAuthenticated && !authLoading && (
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20">
+                <Lock className="w-5 h-5 text-destructive mt-0.5" />
+                <div>
+                  <p className="font-medium text-destructive">Authentication Required</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Please{" "}
+                    <Link to="/login" className="text-primary hover:underline">
+                      log in
+                    </Link>{" "}
+                    or{" "}
+                    <Link to="/register" className="text-primary hover:underline">
+                      sign up
+                    </Link>{" "}
+                    to authenticate certificates.
+                  </p>
+                </div>
+              </div>
+            )}
+            
             {/* Upload Area */}
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               className={`relative border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 ${
-                isDragOver
+                !isAuthenticated
+                  ? "border-muted opacity-50 cursor-not-allowed"
+                  : isDragOver
                   ? "border-primary bg-primary/5 scale-[1.02]"
                   : file
                   ? "border-primary/50 bg-primary/5"
@@ -106,7 +152,8 @@ const Authenticate = () => {
                 type="file"
                 accept=".pdf,image/*"
                 onChange={handleFileChange}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                className={`absolute inset-0 w-full h-full opacity-0 ${isAuthenticated ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+                disabled={!isAuthenticated}
               />
 
               {file ? (
@@ -135,12 +182,18 @@ const Authenticate = () => {
               ) : (
                 <div className="space-y-4">
                   <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center mx-auto">
-                    <Upload className="w-8 h-8 text-muted-foreground" />
+                    {isAuthenticated ? (
+                      <Upload className="w-8 h-8 text-muted-foreground" />
+                    ) : (
+                      <Lock className="w-8 h-8 text-muted-foreground" />
+                    )}
                   </div>
                   <div>
-                    <p className="font-medium">Drop your certificate here</p>
+                    <p className="font-medium">
+                      {isAuthenticated ? "Drop your certificate here" : "Login required"}
+                    </p>
                     <p className="text-sm text-muted-foreground">
-                      or click to browse (PDF or Image)
+                      {isAuthenticated ? "or click to browse (PDF or Image)" : "Please log in to upload certificates"}
                     </p>
                   </div>
                 </div>
@@ -187,9 +240,14 @@ const Authenticate = () => {
             <Button
               className="w-full h-14 gradient-primary text-primary-foreground btn-glow font-semibold text-lg"
               onClick={handleAuthenticate}
-              disabled={!file || status === "uploading" || status === "verifying" || status === "success"}
+              disabled={!file || status === "uploading" || status === "verifying" || status === "success" || !isAuthenticated}
             >
-              {status === "uploading" || status === "verifying" ? (
+              {!isAuthenticated ? (
+                <span className="flex items-center gap-2">
+                  <Lock className="w-5 h-5" />
+                  Log in to Authenticate
+                </span>
+              ) : status === "uploading" || status === "verifying" ? (
                 <span className="flex items-center gap-2">
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Processing...

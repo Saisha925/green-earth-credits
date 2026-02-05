@@ -12,8 +12,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { ArrowLeft, Leaf, AlertTriangle, CheckCircle, Shield } from "lucide-react";
+import { ArrowLeft, Leaf, AlertTriangle, CheckCircle, Shield, Info, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { useDemoMode } from "@/contexts/DemoModeContext";
+import { calculateRetirementFees, PLATFORM_FEE_PERCENTAGE } from "@/lib/platformFees";
 
 const projectData = {
   id: "1",
@@ -28,14 +31,22 @@ const projectData = {
 const Retire = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user, isLoading: authLoading } = useAuth();
+  const { isDemoMode, addRetirementRequest, demoRole } = useDemoMode();
+  
   const [isLoading, setIsLoading] = useState(false);
   const [tonnes, setTonnes] = useState(1);
   const [beneficiary, setBeneficiary] = useState("");
   const [message, setMessage] = useState("");
 
-  const totalPrice = tonnes * projectData.pricePerTonne;
+  const fees = calculateRetirementFees(projectData.pricePerTonne, tonnes);
 
   const handleRetire = async () => {
+    if (!user && !isDemoMode) {
+      toast.error("Please log in to retire carbon credits");
+      return;
+    }
+
     if (!beneficiary) {
       toast.error("Please enter a beneficiary name");
       return;
@@ -46,10 +57,27 @@ const Retire = () => {
     // Simulate retirement
     setTimeout(() => {
       setIsLoading(false);
-      toast.success("Carbon credits retired successfully!");
+      
+      if (isDemoMode) {
+        // Add to demo retirement requests
+        addRetirementRequest({
+          projectName: projectData.title,
+          tonnes,
+          buyerName: beneficiary
+        });
+        
+        toast.success("Retirement requested. Payment held securely.", {
+          description: "Switch to Seller role to process verification."
+        });
+      } else {
+        toast.success("Carbon credits retired successfully!");
+      }
+      
       navigate("/profile");
     }, 2000);
   };
+
+  const isAuthenticated = user || isDemoMode;
 
   return (
     <div className="min-h-screen bg-background">
@@ -72,6 +100,27 @@ const Retire = () => {
             {/* Left: Form */}
             <div className="lg:col-span-3 space-y-6">
               <div className="glass-card rounded-2xl p-6 space-y-6">
+                {/* Auth Warning */}
+                {!isAuthenticated && !authLoading && (
+                  <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20">
+                    <Lock className="w-5 h-5 text-destructive mt-0.5" />
+                    <div>
+                      <p className="font-medium text-destructive">Authentication Required</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Please{" "}
+                        <Link to="/login" className="text-primary hover:underline">
+                          log in
+                        </Link>{" "}
+                        or{" "}
+                        <Link to="/register" className="text-primary hover:underline">
+                          sign up
+                        </Link>{" "}
+                        to retire carbon credits.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Tonnes Input */}
                 <div className="space-y-3">
                   <Label htmlFor="tonnes" className="text-base font-medium">
@@ -82,7 +131,7 @@ const Retire = () => {
                       variant="outline"
                       size="icon"
                       onClick={() => setTonnes(Math.max(1, tonnes - 1))}
-                      disabled={tonnes <= 1}
+                      disabled={tonnes <= 1 || !isAuthenticated}
                     >
                       -
                     </Button>
@@ -93,11 +142,13 @@ const Retire = () => {
                       value={tonnes}
                       onChange={(e) => setTonnes(Math.max(1, parseInt(e.target.value) || 1))}
                       className="w-24 h-12 text-center text-lg font-semibold"
+                      disabled={!isAuthenticated}
                     />
                     <Button
                       variant="outline"
                       size="icon"
                       onClick={() => setTonnes(tonnes + 1)}
+                      disabled={!isAuthenticated}
                     >
                       +
                     </Button>
@@ -121,6 +172,7 @@ const Retire = () => {
                     value={beneficiary}
                     onChange={(e) => setBeneficiary(e.target.value)}
                     className="h-12"
+                    disabled={!isAuthenticated}
                   />
                 </div>
 
@@ -138,6 +190,7 @@ const Retire = () => {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     rows={4}
+                    disabled={!isAuthenticated}
                   />
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
                     <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
@@ -200,7 +253,7 @@ const Retire = () => {
 
                 <Separator />
 
-                {/* Price Breakdown */}
+                {/* Price Breakdown with Platform Fee */}
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Price per tonne</span>
@@ -211,12 +264,31 @@ const Retire = () => {
                     <span>{tonnes} tonnes</span>
                   </div>
                   <Separator />
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Credits cost</span>
+                    <span>${fees.creditSubtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      Platform fee ({PLATFORM_FEE_PERCENTAGE}%)
+                      <Info className="w-3 h-3" />
+                    </span>
+                    <span>${fees.platformFeeAmount.toFixed(2)}</span>
+                  </div>
+                  <Separator />
                   <div className="flex justify-between items-baseline">
-                    <span className="font-medium">Total</span>
+                    <span className="font-medium">Total payable</span>
                     <span className="text-2xl font-bold text-gradient">
-                      ${totalPrice.toFixed(2)}
+                      ${fees.totalAmountPaid.toFixed(2)}
                     </span>
                   </div>
+                </div>
+
+                {/* Platform Fee Info */}
+                <div className="p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+                  <p>
+                    Platform fee covers verification, escrow handling, and marketplace operations.
+                  </p>
                 </div>
 
                 {/* Verification Badge */}
@@ -229,12 +301,17 @@ const Retire = () => {
                 <Button
                   className="w-full h-14 gradient-primary text-primary-foreground btn-glow font-semibold text-lg"
                   onClick={handleRetire}
-                  disabled={isLoading}
+                  disabled={isLoading || !isAuthenticated}
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-2">
                       <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                       Processing...
+                    </span>
+                  ) : !isAuthenticated ? (
+                    <span className="flex items-center gap-2">
+                      <Lock className="w-5 h-5" />
+                      Log in to Retire
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
@@ -244,14 +321,23 @@ const Retire = () => {
                   )}
                 </Button>
 
+                {!isAuthenticated && (
+                  <p className="text-xs text-center text-muted-foreground">
+                    <Link to="/login" className="text-primary hover:underline">Log in</Link> or{" "}
+                    <Link to="/register" className="text-primary hover:underline">sign up</Link> to continue
+                  </p>
+                )}
+
                 {/* Success Message */}
-                <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                  <CheckCircle className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                  <span>
-                    By retiring, you're permanently removing these carbon credits from 
-                    circulation and contributing to climate action.
-                  </span>
-                </div>
+                {isAuthenticated && (
+                  <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <CheckCircle className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <span>
+                      By retiring, you're permanently removing these carbon credits from 
+                      circulation and contributing to climate action.
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

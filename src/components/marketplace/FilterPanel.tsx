@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -36,14 +36,86 @@ const FilterSection = ({ title, children, defaultOpen = true }: FilterSectionPro
   );
 };
 
+export interface FilterState {
+  priceRange: [number, number];
+  vintageRange: [number, number];
+  selectedCountries: string[];
+  selectedCategories: string[];
+  selectedRegistries: string[];
+  directListingsOnly: boolean;
+}
+
 interface FilterPanelProps {
   onClose?: () => void;
   isMobile?: boolean;
+  filters?: FilterState;
+  onFilterChange?: (filters: FilterState) => void;
 }
 
-export const FilterPanel = ({ onClose, isMobile }: FilterPanelProps) => {
-  const [priceRange, setPriceRange] = useState([0, 100]);
-  const [vintageRange, setVintageRange] = useState([2015, 2024]);
+export const FilterPanel = ({ onClose, isMobile, filters, onFilterChange }: FilterPanelProps) => {
+  const [priceRange, setPriceRange] = useState(filters?.priceRange || [0, 100]);
+  const [vintageRange, setVintageRange] = useState(filters?.vintageRange || [2015, 2024]);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>(filters?.selectedCountries || []);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(filters?.selectedCategories || []);
+  const [selectedRegistries, setSelectedRegistries] = useState<string[]>(filters?.selectedRegistries || []);
+  const [directListingsOnly, setDirectListingsOnly] = useState(filters?.directListingsOnly || false);
+
+  // Update parent when filters change
+  useEffect(() => {
+    if (onFilterChange) {
+      onFilterChange({
+        priceRange: priceRange as [number, number],
+        vintageRange: vintageRange as [number, number],
+        selectedCountries,
+        selectedCategories,
+        selectedRegistries,
+        directListingsOnly
+      });
+    }
+  }, [priceRange, vintageRange, selectedCountries, selectedCategories, selectedRegistries, directListingsOnly, onFilterChange]);
+
+  const handleCountryChange = (country: string, checked: boolean) => {
+    if (checked) {
+      setSelectedCountries([...selectedCountries, country]);
+    } else {
+      setSelectedCountries(selectedCountries.filter(c => c !== country));
+    }
+  };
+
+  const handleCategoryChange = (category: string, checked: boolean) => {
+    if (checked) {
+      setSelectedCategories([...selectedCategories, category]);
+    } else {
+      setSelectedCategories(selectedCategories.filter(c => c !== category));
+    }
+  };
+
+  const handleRegistryChange = (registry: string, checked: boolean) => {
+    if (checked) {
+      setSelectedRegistries([...selectedRegistries, registry]);
+    } else {
+      setSelectedRegistries(selectedRegistries.filter(r => r !== registry));
+    }
+  };
+
+  const handleClearAll = () => {
+    setPriceRange([0, 100]);
+    setVintageRange([2015, 2024]);
+    setSelectedCountries([]);
+    setSelectedCategories([]);
+    setSelectedRegistries([]);
+    setDirectListingsOnly(false);
+  };
+
+  const hasActiveFilters = 
+    priceRange[0] !== 0 || 
+    priceRange[1] !== 100 ||
+    vintageRange[0] !== 2015 ||
+    vintageRange[1] !== 2024 ||
+    selectedCountries.length > 0 ||
+    selectedCategories.length > 0 ||
+    selectedRegistries.length > 0 ||
+    directListingsOnly;
 
   return (
     <div className={`${isMobile ? "" : "glass-card rounded-2xl p-6"} space-y-2`}>
@@ -59,7 +131,13 @@ export const FilterPanel = ({ onClose, isMobile }: FilterPanelProps) => {
       {!isMobile && (
         <div className="flex items-center justify-between pb-4 border-b border-border">
           <h3 className="font-semibold">Filters</h3>
-          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-xs text-muted-foreground"
+            onClick={handleClearAll}
+            disabled={!hasActiveFilters}
+          >
             Clear All
           </Button>
         </div>
@@ -70,7 +148,7 @@ export const FilterPanel = ({ onClose, isMobile }: FilterPanelProps) => {
         <div className="space-y-4">
           <Slider
             value={priceRange}
-            onValueChange={setPriceRange}
+            onValueChange={(v) => setPriceRange(v as [number, number])}
             min={0}
             max={100}
             step={1}
@@ -88,7 +166,11 @@ export const FilterPanel = ({ onClose, isMobile }: FilterPanelProps) => {
         <div className="space-y-2 max-h-40 overflow-y-auto">
           {countries.map((country) => (
             <div key={country} className="flex items-center gap-2">
-              <Checkbox id={`country-${country}`} />
+              <Checkbox 
+                id={`country-${country}`}
+                checked={selectedCountries.includes(country)}
+                onCheckedChange={(checked) => handleCountryChange(country, checked === true)}
+              />
               <Label htmlFor={`country-${country}`} className="text-sm cursor-pointer">
                 {country}
               </Label>
@@ -102,7 +184,11 @@ export const FilterPanel = ({ onClose, isMobile }: FilterPanelProps) => {
         <div className="space-y-2">
           {categories.map((cat) => (
             <div key={cat} className="flex items-center gap-2">
-              <Checkbox id={`cat-${cat}`} />
+              <Checkbox 
+                id={`cat-${cat}`}
+                checked={selectedCategories.includes(cat)}
+                onCheckedChange={(checked) => handleCategoryChange(cat, checked === true)}
+              />
               <Label htmlFor={`cat-${cat}`} className="text-sm cursor-pointer">
                 {cat}
               </Label>
@@ -116,7 +202,7 @@ export const FilterPanel = ({ onClose, isMobile }: FilterPanelProps) => {
         <div className="space-y-4">
           <Slider
             value={vintageRange}
-            onValueChange={setVintageRange}
+            onValueChange={(v) => setVintageRange(v as [number, number])}
             min={2010}
             max={2024}
             step={1}
@@ -134,7 +220,11 @@ export const FilterPanel = ({ onClose, isMobile }: FilterPanelProps) => {
         <div className="space-y-2">
           {registries.map((registry) => (
             <div key={registry} className="flex items-center gap-2">
-              <Checkbox id={`registry-${registry}`} />
+              <Checkbox 
+                id={`registry-${registry}`}
+                checked={selectedRegistries.includes(registry)}
+                onCheckedChange={(checked) => handleRegistryChange(registry, checked === true)}
+              />
               <Label htmlFor={`registry-${registry}`} className="text-sm cursor-pointer">
                 {registry}
               </Label>
@@ -146,7 +236,11 @@ export const FilterPanel = ({ onClose, isMobile }: FilterPanelProps) => {
       {/* Direct Listings Toggle */}
       <div className="pt-4 border-t border-border">
         <div className="flex items-center gap-2">
-          <Checkbox id="direct" />
+          <Checkbox 
+            id="direct"
+            checked={directListingsOnly}
+            onCheckedChange={(checked) => setDirectListingsOnly(checked === true)}
+          />
           <Label htmlFor="direct" className="text-sm cursor-pointer">
             Direct listings only
           </Label>

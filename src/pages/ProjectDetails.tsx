@@ -14,7 +14,10 @@ import {
   ExternalLink,
   ArrowLeft,
   Leaf,
+  Lock,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useDemoMode } from "@/contexts/DemoModeContext";
 
 // Mock project data
 const projectData = {
@@ -44,6 +47,10 @@ The project delivers multiple benefits beyond carbon sequestration:
 
 const ProjectDetails = () => {
   const { id } = useParams();
+  const { user, isLoading } = useAuth();
+  const { isDemoMode } = useDemoMode();
+  
+  const isAuthenticated = user || isDemoMode;
 
   return (
     <div className="min-h-screen bg-background">
@@ -175,11 +182,33 @@ const ProjectDetails = () => {
 
                 <Separator />
 
+                {/* Auth Warning */}
+                {!isAuthenticated && !isLoading && (
+                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">
+                    <p className="flex items-center gap-2 text-amber-500">
+                      <Lock className="w-4 h-4" />
+                      Please log in to retire credits
+                    </p>
+                  </div>
+                )}
+
                 {/* CTA */}
-                <Link to={`/retire/${id}`}>
-                  <Button className="w-full h-14 gradient-primary text-primary-foreground btn-glow font-semibold text-lg">
-                    <Leaf className="w-5 h-5 mr-2" />
-                    Retire Carbon
+                <Link to={isAuthenticated ? `/retire/${id}` : "/login"}>
+                  <Button 
+                    className="w-full h-14 gradient-primary text-primary-foreground btn-glow font-semibold text-lg"
+                    disabled={isLoading}
+                  >
+                    {isAuthenticated ? (
+                      <>
+                        <Leaf className="w-5 h-5 mr-2" />
+                        Retire Carbon
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-5 h-5 mr-2" />
+                        Log in to Retire
+                      </>
+                    )}
                   </Button>
                 </Link>
 
