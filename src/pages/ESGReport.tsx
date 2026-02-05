@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ESGContextForm } from "@/components/esg/ESGContextForm";
 import { ESGInputTabs } from "@/components/esg/ESGInputTabs";
 import { ESGDashboard } from "@/components/esg/ESGDashboard";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, FileText, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   calculateESGScores, 
   EnvironmentalInputs, 
@@ -33,8 +34,15 @@ export interface ESGNarratives {
   recommendations: string;
 }
 
+interface SectionCompletion {
+  environmental: boolean;
+  social: boolean;
+  governance: boolean;
+}
+
 const ESGReport = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [step, setStep] = useState<'context' | 'inputs' | 'report'>('context');
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportId, setReportId] = useState<string | null>(null);
@@ -83,12 +91,53 @@ const ESGReport = () => {
   const [scores, setScores] = useState<ESGScores | null>(null);
   const [narratives, setNarratives] = useState<ESGNarratives | null>(null);
 
+  // Calculate section completion status
+  const sectionCompletion = useMemo<SectionCompletion>(() => {
+    const envComplete = 
+      environmental.scope1Emissions > 0 ||
+      environmental.scope2Emissions > 0 ||
+      environmental.scope3Emissions > 0 ||
+      environmental.renewableEnergyPercentage > 0 ||
+      environmental.waterConsumption > 0;
+    
+    const socialComplete = 
+      social.totalEmployees > 0 ||
+      social.trainingHoursPerEmployee > 0;
+    
+    const govComplete = 
+      governance.boardSize > 0 ||
+      governance.independentDirectorsPercentage > 0 ||
+      governance.antiCorruptionPolicy ||
+      governance.whistleblowerPolicy;
+    
+    return {
+      environmental: envComplete,
+      social: socialComplete,
+      governance: govComplete
+    };
+  }, [environmental, social, governance]);
+
+  const allSectionsComplete = useMemo(() => {
+    return sectionCompletion.environmental && 
+           sectionCompletion.social && 
+           sectionCompletion.governance;
+  }, [sectionCompletion]);
+
   const handleContextSubmit = (data: ReportContext) => {
     setContext(data);
     setStep('inputs');
   };
 
   const handleGenerateReport = async () => {
+    if (!allSectionsComplete) {
+      toast({
+        title: "Incomplete Sections",
+        description: "Please complete all ESG sections before generating the report.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsGenerating(true);
     
     try {
@@ -136,7 +185,8 @@ const ESGReport = () => {
           governance_score: calculatedScores.governanceScore,
           overall_esg_score: calculatedScores.overallScore,
           risk_category: calculatedScores.riskCategory,
-          status: 'processing'
+          status: 'processing',
+          user_id: user?.id || null
         })
         .select()
         .single();
@@ -268,6 +318,41 @@ const ESGReport = () => {
           
           {step === 'inputs' && (
             <div className="space-y-6">
+              {/* Section Completion Indicators */}
+              <div className="glass-card rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertCircle className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Section Completion Status</span>
+                </div>
+                <div className="flex gap-4">
+                  {[
+                    { key: 'environmental', label: 'Environmental', icon: '🌿' },
+                    { key: 'social', label: 'Social', icon: '👥' },
+                    { key: 'governance', label: 'Governance', icon: '⚖️' }
+                  ].map(({ key, label, icon }) => (
+                    <div
+                      key={key}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                        sectionCompletion[key as keyof SectionCompletion]
+                          ? 'bg-primary/10 text-primary'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      <span>{icon}</span>
+                      <span>{label}</span>
+                      {sectionCompletion[key as keyof SectionCompletion] && (
+                        <span className="text-xs">✓</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {!allSectionsComplete && (
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Please complete all ESG sections to proceed with report generation.
+                  </p>
+                )}
+              </div>
+              
               <ESGInputTabs
                 environmental={environmental}
                 social={social}
@@ -285,23 +370,30 @@ const ESGReport = () => {
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Context
                 </Button>
-                <Button 
-                  onClick={handleGenerateReport}
-                  disabled={isGenerating}
-                  className="gradient-primary text-primary-foreground btn-glow"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating Report...
-                    </>
-                  ) : (
-                    <>
-                      Generate ESG Report
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </>
+                <div className="flex flex-col items-end gap-2">
+                  <Button 
+                    onClick={handleGenerateReport}
+                    disabled={isGenerating || !allSectionsComplete}
+                    className="gradient-primary text-primary-foreground btn-glow"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Generating Report...
+                      </>
+                    ) : (
+                      <>
+                        Generate ESG Report
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                  {!allSectionsComplete && (
+                    <p className="text-xs text-destructive">
+                      Complete all sections to enable report generation
+                    </p>
                   )}
-                </Button>
+                </div>
               </div>
             </div>
           )}

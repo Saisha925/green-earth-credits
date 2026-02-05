@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ProjectCard } from "@/components/marketplace/ProjectCard";
-import { FilterPanel } from "@/components/marketplace/FilterPanel";
+import { FilterPanel, FilterState } from "@/components/marketplace/FilterPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,6 +27,7 @@ const mockProjects = [
     category: "Avoided Deforestation",
     vintage: 2023,
     verified: true,
+    registry: "Verra",
   },
   {
     id: "2",
@@ -38,6 +39,7 @@ const mockProjects = [
     category: "Blue Carbon",
     vintage: 2024,
     verified: true,
+    registry: "Gold Standard",
   },
   {
     id: "3",
@@ -49,6 +51,7 @@ const mockProjects = [
     category: "Renewable Energy",
     vintage: 2023,
     verified: true,
+    registry: "Verra",
   },
   {
     id: "4",
@@ -60,6 +63,7 @@ const mockProjects = [
     category: "Reforestation",
     vintage: 2024,
     verified: true,
+    registry: "Gold Standard",
   },
   {
     id: "5",
@@ -71,6 +75,7 @@ const mockProjects = [
     category: "Renewable Energy",
     vintage: 2023,
     verified: true,
+    registry: "American Carbon Registry",
   },
   {
     id: "6",
@@ -82,6 +87,7 @@ const mockProjects = [
     category: "Clean Cookstoves",
     vintage: 2024,
     verified: true,
+    registry: "Gold Standard",
   },
   {
     id: "7",
@@ -93,6 +99,7 @@ const mockProjects = [
     category: "Avoided Deforestation",
     vintage: 2023,
     verified: true,
+    registry: "Verra",
   },
   {
     id: "8",
@@ -104,6 +111,7 @@ const mockProjects = [
     category: "Reforestation",
     vintage: 2024,
     verified: true,
+    registry: "Climate Action Reserve",
   },
   {
     id: "9",
@@ -115,21 +123,98 @@ const mockProjects = [
     category: "Renewable Energy",
     vintage: 2023,
     verified: true,
+    registry: "Verra",
   },
 ];
+
+const defaultFilters: FilterState = {
+  priceRange: [0, 100],
+  vintageRange: [2015, 2024],
+  selectedCountries: [],
+  selectedCategories: [],
+  selectedRegistries: [],
+  directListingsOnly: false
+};
 
 const Marketplace = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevance");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterState>(defaultFilters);
 
-  const filteredProjects = mockProjects.filter((project) =>
-    project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    project.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    project.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleFilterChange = useCallback((newFilters: FilterState) => {
+    setFilters(newFilters);
+  }, []);
+
+  const filteredProjects = useMemo(() => {
+    let projects = mockProjects.filter((project) => {
+      // Search query filter
+      const matchesSearch = 
+        project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.category.toLowerCase().includes(searchQuery.toLowerCase());
+
+      if (!matchesSearch) return false;
+
+      // Price range filter
+      if (project.pricePerTonne < filters.priceRange[0] || project.pricePerTonne > filters.priceRange[1]) {
+        return false;
+      }
+
+      // Vintage range filter
+      if (project.vintage < filters.vintageRange[0] || project.vintage > filters.vintageRange[1]) {
+        return false;
+      }
+
+      // Country filter
+      if (filters.selectedCountries.length > 0 && !filters.selectedCountries.includes(project.country)) {
+        return false;
+      }
+
+      // Category filter
+      if (filters.selectedCategories.length > 0 && !filters.selectedCategories.includes(project.category)) {
+        return false;
+      }
+
+      // Registry filter
+      if (filters.selectedRegistries.length > 0 && !filters.selectedRegistries.includes(project.registry)) {
+        return false;
+      }
+
+      return true;
+    });
+
+    // Sort projects
+    switch (sortBy) {
+      case "price-low":
+        projects = [...projects].sort((a, b) => a.pricePerTonne - b.pricePerTonne);
+        break;
+      case "price-high":
+        projects = [...projects].sort((a, b) => b.pricePerTonne - a.pricePerTonne);
+        break;
+      case "newest":
+        projects = [...projects].sort((a, b) => b.vintage - a.vintage);
+        break;
+      default:
+        // Keep original order for relevance
+        break;
+    }
+
+    return projects;
+  }, [searchQuery, filters, sortBy]);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.priceRange[0] !== 0 || filters.priceRange[1] !== 100) count++;
+    if (filters.vintageRange[0] !== 2015 || filters.vintageRange[1] !== 2024) count++;
+    if (filters.selectedCountries.length > 0) count++;
+    if (filters.selectedCategories.length > 0) count++;
+    if (filters.selectedRegistries.length > 0) count++;
+    if (filters.directListingsOnly) count++;
+    return count;
+  }, [filters]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -166,10 +251,20 @@ const Marketplace = () => {
                   <Button variant="outline" className="lg:hidden h-12">
                     <SlidersHorizontal className="w-4 h-4 mr-2" />
                     Filters
+                    {activeFilterCount > 0 && (
+                      <span className="ml-2 px-1.5 py-0.5 text-xs bg-primary text-primary-foreground rounded-full">
+                        {activeFilterCount}
+                      </span>
+                    )}
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-80 p-6">
-                  <FilterPanel isMobile onClose={() => setIsFilterOpen(false)} />
+                  <FilterPanel 
+                    isMobile 
+                    onClose={() => setIsFilterOpen(false)}
+                    filters={filters}
+                    onFilterChange={handleFilterChange}
+                  />
                 </SheetContent>
               </Sheet>
 
@@ -211,6 +306,11 @@ const Marketplace = () => {
           {/* Results Count */}
           <p className="text-sm text-muted-foreground mb-6">
             Showing {filteredProjects.length} projects
+            {activeFilterCount > 0 && (
+              <span className="ml-2 text-primary">
+                ({activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} active)
+              </span>
+            )}
           </p>
 
           {/* Main Content */}
@@ -218,7 +318,10 @@ const Marketplace = () => {
             {/* Desktop Filter Sidebar */}
             <aside className="hidden lg:block w-72 shrink-0">
               <div className="sticky top-28">
-                <FilterPanel />
+                <FilterPanel 
+                  filters={filters}
+                  onFilterChange={handleFilterChange}
+                />
               </div>
             </aside>
 
@@ -243,6 +346,13 @@ const Marketplace = () => {
               {filteredProjects.length === 0 && (
                 <div className="text-center py-16">
                   <p className="text-muted-foreground">No projects found matching your criteria.</p>
+                  <Button 
+                    variant="link" 
+                    onClick={() => setFilters(defaultFilters)}
+                    className="mt-2"
+                  >
+                    Clear all filters
+                  </Button>
                 </div>
               )}
             </div>

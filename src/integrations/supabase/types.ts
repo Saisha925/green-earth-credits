@@ -57,6 +57,7 @@ export type Database = {
           total_employees: number | null
           training_hours_per_employee: number | null
           updated_at: string
+          user_id: string | null
           water_consumption: number | null
           water_stress_area: boolean | null
           whistleblower_policy: boolean | null
@@ -103,6 +104,7 @@ export type Database = {
           total_employees?: number | null
           training_hours_per_employee?: number | null
           updated_at?: string
+          user_id?: string | null
           water_consumption?: number | null
           water_stress_area?: boolean | null
           whistleblower_policy?: boolean | null
@@ -149,6 +151,7 @@ export type Database = {
           total_employees?: number | null
           training_hours_per_employee?: number | null
           updated_at?: string
+          user_id?: string | null
           water_consumption?: number | null
           water_stress_area?: boolean | null
           whistleblower_policy?: boolean | null
