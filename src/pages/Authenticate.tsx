@@ -73,23 +73,34 @@ const Authenticate = () => {
 
     setStatus("uploading");
 
-    // Simulate upload
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setStatus("verifying");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
 
-    // Simulate verification
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+      const request = fetch("/server/api/authenticate-certificate", {
+        method: "POST",
+        body: formData,
+      });
 
-    // Randomly succeed or fail for demo
-    const isValid = Math.random() > 0.3;
-    setStatus(isValid ? "success" : "error");
+      setStatus("verifying");
+      const response = await request;
+      const payload = await response.json();
 
-    if (isValid) {
+      if (!response.ok || !payload.success) {
+        setStatus("error");
+        toast.error("Certificate verification failed. Please try again.");
+        return;
+      }
+
+      localStorage.setItem("authenticatedCertificate", JSON.stringify(payload.data));
+      setStatus("success");
       toast.success("Certificate verified successfully!");
       setTimeout(() => {
         navigate("/sell");
       }, 1500);
-    } else {
+    } catch (error) {
+      console.error("Authentication error:", error);
+      setStatus("error");
       toast.error("Certificate verification failed. Please try again.");
     }
   };

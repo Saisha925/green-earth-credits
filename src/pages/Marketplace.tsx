@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ProjectCard } from "@/components/marketplace/ProjectCard";
@@ -142,13 +142,32 @@ const Marketplace = () => {
   const [sortBy, setSortBy] = useState("relevance");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
+  const [dynamicListings, setDynamicListings] = useState<typeof mockProjects>([]);
+
+  useEffect(() => {
+    const loadListings = async () => {
+      try {
+        const response = await fetch("/server/api/marketplace-listings");
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (payload.success && Array.isArray(payload.data)) {
+          setDynamicListings(payload.data);
+        }
+      } catch (error) {
+        console.error("Failed to load marketplace listings:", error);
+      }
+    };
+
+    loadListings();
+  }, []);
 
   const handleFilterChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);
   }, []);
 
   const filteredProjects = useMemo(() => {
-    let projects = mockProjects.filter((project) => {
+    const allProjects = [...dynamicListings, ...mockProjects];
+    let projects = allProjects.filter((project) => {
       // Search query filter
       const matchesSearch = 
         project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -203,7 +222,7 @@ const Marketplace = () => {
     }
 
     return projects;
-  }, [searchQuery, filters, sortBy]);
+  }, [searchQuery, filters, sortBy, dynamicListings]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
