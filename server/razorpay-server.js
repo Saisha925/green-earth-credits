@@ -130,12 +130,215 @@ app.post('/api/razorpay/verify-payment', (req, res) => {
 });
 
 /**
+ * Carbon Authentication Utilities
+ */
+
+const CARBONMARK_BASE_URL = 'https://v18.api.carbonmark.com';
+const CARBONMARK_API_KEY = 'cm_api_sandbox_13d435c7-525d-455e-ad44-d28a70522a5c';
+
+const carbonmarkHeaders = {
+  Authorization: `Bearer ${CARBONMARK_API_KEY}`,
+  Accept: 'application/json',
+};
+
+/**
+ * Calculate similarity between two strings
+ */
+function calculateSimilarity(a, b) {
+  const aLower = a.toLowerCase();
+  const bLower = b.toLowerCase();
+
+  if (!aLower || !bLower) return 0;
+
+  const matches = findMatches(aLower, bLower);
+  const totalLength = Math.max(aLower.length, bLower.length);
+
+  return totalLength > 0 ? matches / totalLength : 0;
+}
+
+/**
+ * Find matching characters between two strings
+ */
+function findMatches(a, b) {
+  let matches = 0;
+  const shorter = a.length < b.length ? a : b;
+  const longer = a.length < b.length ? b : a;
+
+  for (let i = 0; i < shorter.length; i++) {
+    if (longer.includes(shorter[i])) {
+      matches++;
+    }
+  }
+
+  return matches;
+}
+
+/**
+ * Fetch Carbonmark listings
+ */
+async function fetchCarbonmarkListings() {
+  try {
+    const url = `${CARBONMARK_BASE_URL}/listings`;
+    const response = await fetch(url, {
+      headers: carbonmarkHeaders,
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Carbonmark API error: ${response.statusText}`);
+    }
+
+    const payload = await response.json();
+
+    // Handle both list and wrapped responses
+    if (Array.isArray(payload)) {
+      return payload;
+    } else if (typeof payload === 'object' && payload.data) {
+      return payload.data;
+    }
+
+    return [];
+  } catch (error) {
+    console.error('[Carbon] Error fetching Carbonmark listings:', error);
+    throw error;
+  }
+}
+
+/**
+ * Authenticate certificate against Carbonmark data
+ */
+function authenticateCertificate(cert, listings) {
+  let bestMatch = null;
+  let bestScore = 0;
+
+  for (const listing of listings) {
+    const project = listing.project || {};
+    let score = 0;
+
+    // Project name (50%)
+    score += calculateSimilarity(cert.project_name || '', project.name || '') * 0.5;
+
+    // Vintage (20%)
+    if (cert.vintage && String(project.vintage) === cert.vintage) {
+      score += 0.2;
+    }
+
+    // Country (15%)
+    if (cert.country && cert.country.toLowerCase() === (project.country || '').toLowerCase()) {
+      score += 0.15;
+    }
+
+    // Methodology (15%)
+    if (cert.methodology === project.methodology) {
+      score += 0.15;
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = listing;
+    }
+  }
+
+  return {
+    authenticated: bestScore >= 0.75,
+    confidence: Math.round(bestScore * 100) / 100,
+    matched_credit_id: bestMatch?.creditId || null,
+    matched_project: bestMatch?.project || null,
+  };
+}
+
+/**
+ * Authenticate Carbon Credit
+ * POST /api/carbon/authenticate
+ */
+app.post('/api/carbon/authenticate', async (req, res) => {
+  try {
+    const { certificate } = req.body;
+
+    // Validate input
+    if (!certificate || typeof certificate !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid certificate data. Expected object with certificate fields.',
+      });
+    }
+
+    console.log('[Carbon] Authenticating certificate:', certificate);
+
+    // Fetch Carbonmark listings
+    const listings = await fetchCarbonmarkListings();
+    console.log('[Carbon] Fetched listings:', listings.length);
+
+    // Authenticate
+    const result = authenticateCertificate(certificate, listings);
+    console.log('[Carbon] Authentication result:', result);
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    console.error('[Carbon] Error authenticating certificate:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to authenticate certificate',
+    });
+  }
+});
+
+/**
+ * Extract Certificate Fields
+ * POST /api/carbon/extract
+ */
+app.post('/api/carbon/extract', (req, res) => {
+  try {
+    const { text } = req.body;
+
+    if (!text || typeof text !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid text. Expected string.',
+      });
+    }
+
+    const patterns = {
+      project_name: /Project Name:\s*(.+)/i,
+      vintage: /Vintage Year:\s*(\d{4})/i,
+      country: /Country:\s*(.+)/i,
+      methodology: /Methodology:\s*(.+)/i,
+    };
+
+    const fields = {};
+
+    for (const [key, pattern] of Object.entries(patterns)) {
+      const match = text.match(pattern);
+      if (match) {
+        fields[key] = match[1].trim();
+      }
+    }
+
+    console.log('[Carbon] Extracted fields:', fields);
+
+    res.status(200).json({
+      success: true,
+      data: fields,
+    });
+  } catch (error) {
+    console.error('[Carbon] Error extracting fields:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to extract fields',
+    });
+  }
+});
+
+/**
  * Health Check
  */
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
-    message: 'Razorpay backend server is running',
+    message: 'Razorpay + Carbon Auth backend server is running',
     environment: process.env.NODE_ENV || 'development',
   });
 });
