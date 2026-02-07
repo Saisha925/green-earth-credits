@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,7 @@ const dashboardCards = [
 ];
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { isDemoMode, demoRole } = useDemoMode();
   const { profile, role } = useProfile();
   const { user } = useAuth();
@@ -116,13 +117,17 @@ const Dashboard = () => {
           </div>
 
           {/* Role Tabs */}
-          <Tabs value={activeRole} className="mb-8">
+          <Tabs value={activeRole} className="mb-8" onValueChange={(value) => {
+            if (value === "seller") {
+              navigate("/sell");
+            }
+          }}>
             <TabsList className="grid w-full max-w-md grid-cols-2 h-12">
-              <TabsTrigger value="buyer" className="h-10 text-base" disabled={isDemoMode}>
+              <TabsTrigger value="buyer" className="h-10 text-base">
                 <ShoppingCart className="w-4 h-4 mr-2" />
                 Buyer
               </TabsTrigger>
-              <TabsTrigger value="seller" className="h-10 text-base" disabled={isDemoMode}>
+              <TabsTrigger value="seller" className="h-10 text-base">
                 <Store className="w-4 h-4 mr-2" />
                 Seller
               </TabsTrigger>

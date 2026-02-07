@@ -21,7 +21,7 @@ const Login = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate("/home", { replace: true });
+      navigate("/dashboard", { replace: true });
     }
   }, [user, navigate]);
 
@@ -54,7 +54,7 @@ const Login = () => {
     }
 
     toast.success("Welcome back!");
-    navigate("/home", { replace: true });
+    navigate("/dashboard", { replace: true });
   };
 
   return (

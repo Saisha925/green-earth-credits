@@ -25,7 +25,7 @@ const Register = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate("/home", { replace: true });
+      navigate("/dashboard", { replace: true });
     }
   }, [user, navigate]);
 
@@ -92,7 +92,7 @@ const Register = () => {
 
       setIsLoading(false);
       toast.success("Account created successfully!");
-      navigate("/home", { replace: true });
+      navigate("/dashboard", { replace: true });
     } else if (authData.user && !authData.session) {
       // Email confirmation required - still create profile and role
       // They'll be accessible after email confirmation

@@ -101,7 +101,7 @@ const Sell = () => {
     }
 
     toast.success("Your credits have been listed successfully!");
-    navigate("/home");
+    navigate("/dashboard");
   };
 
   return (
