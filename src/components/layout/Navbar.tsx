@@ -1,10 +1,11 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Leaf, Menu, X, Sun, Moon, LogOut, Home } from "lucide-react";
+import { Leaf, Menu, X, Sun, Moon, LogOut, Home, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { DemoModeToggle } from "./DemoModeToggle";
 import { useDemoMode } from "@/contexts/DemoModeContext";
+import { useProfile } from "@/hooks/useProfile";
 
 export const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -14,11 +15,13 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const { user, signOut, isLoading } = useAuth();
   const { isDemoMode } = useDemoMode();
+  const { profile } = useProfile();
+
+  const displayName = profile?.full_name || user?.email?.split("@")[0] || "";
 
   useEffect(() => {
-    // Set dark mode by default
     document.documentElement.classList.add("dark");
-    
+
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
@@ -68,7 +71,7 @@ export const Navbar = () => {
             <DemoModeToggle />
           </div>
         )}
-        
+
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-4">
@@ -123,9 +126,8 @@ export const Navbar = () => {
 
           {/* Right Side Actions */}
           <div className="hidden md:flex items-center gap-3">
-            {/* Demo Mode Toggle */}
             {!isDemoMode && <DemoModeToggle />}
-            
+
             <Button
               variant="ghost"
               size="icon"
@@ -138,18 +140,26 @@ export const Navbar = () => {
                 <Moon className="h-5 w-5" />
               )}
             </Button>
-            
+
             {isLoading ? (
               <div className="w-20 h-10 animate-pulse bg-muted rounded-lg" />
             ) : user ? (
-              <Button
-                variant="ghost"
-                onClick={handleSignOut}
-                className="font-medium"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Log out
-              </Button>
+              <div className="flex items-center gap-2">
+                {displayName && (
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    <User className="w-3 h-3" />
+                    {displayName}
+                  </span>
+                )}
+                <Button
+                  variant="ghost"
+                  onClick={handleSignOut}
+                  className="font-medium"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Log out
+                </Button>
+              </div>
             ) : (
               <>
                 <Link to="/login">
@@ -239,17 +249,24 @@ export const Navbar = () => {
             ))}
             <div className="flex flex-col gap-2 pt-4 border-t border-border">
               {user ? (
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    handleSignOut();
-                  }}
-                  className="w-full justify-start"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Log out
-                </Button>
+                <>
+                  {displayName && (
+                    <span className="text-sm text-muted-foreground px-4 py-1">
+                      Signed in as {displayName}
+                    </span>
+                  )}
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      handleSignOut();
+                    }}
+                    className="w-full justify-start"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Log out
+                  </Button>
+                </>
               ) : (
                 <>
                   <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>

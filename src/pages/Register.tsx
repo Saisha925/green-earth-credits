@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,9 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Navbar } from "@/components/layout/Navbar";
 import { Leaf, Mail, Lock, User, Phone, ShoppingCart, Store, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Register = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<"buyer" | "seller" | null>(null);
   const [formData, setFormData] = useState({
@@ -19,33 +22,95 @@ const Register = () => {
     confirmPassword: "",
   });
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/home", { replace: true });
+    }
+  }, [user, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedRole) {
       toast.error("Please select a role");
       return;
     }
-    
+
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match");
       return;
     }
-    
+
+    if (formData.password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
     setIsLoading(true);
-    
-    // Simulate registration - will be replaced with real auth
-    setTimeout(() => {
+
+    // Sign up with Supabase
+    const redirectUrl = `${window.location.origin}/`;
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          full_name: formData.name,
+          phone: formData.phone,
+          role: selectedRole,
+        },
+      },
+    });
+
+    if (authError) {
+      setIsLoading(false);
+      if (authError.message.includes("already registered")) {
+        toast.error("This email is already registered. Please log in instead.");
+      } else {
+        toast.error(authError.message);
+      }
+      return;
+    }
+
+    // If user was created and session exists (auto-confirm enabled), create profile and role
+    if (authData.user && authData.session) {
+      // Create profile
+      await supabase.from("profiles").insert({
+        user_id: authData.user.id,
+        full_name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+      });
+
+      // Create role
+      await supabase.from("user_roles").insert({
+        user_id: authData.user.id,
+        role: selectedRole,
+      });
+
       setIsLoading(false);
       toast.success("Account created successfully!");
-      navigate("/home");
-    }, 1500);
+      navigate("/home", { replace: true });
+    } else if (authData.user && !authData.session) {
+      // Email confirmation required - still create profile and role
+      // They'll be accessible after email confirmation
+      setIsLoading(false);
+      toast.success("Account created! Please check your email to confirm your account.", {
+        duration: 5000,
+      });
+      navigate("/login");
+    } else {
+      setIsLoading(false);
+      toast.error("Something went wrong. Please try again.");
+    }
   };
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <div className="min-h-screen flex items-center justify-center pt-24 pb-12 px-4">
         <div className="w-full max-w-md space-y-8 animate-fade-in-up">
           {/* Header */}
@@ -100,7 +165,7 @@ const Register = () => {
                   <Input
                     id="name"
                     type="text"
-                    placeholder="John Doe"
+                    placeholder="Your full name"
                     className="pl-10 h-12"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -153,6 +218,7 @@ const Register = () => {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
+                    minLength={6}
                   />
                 </div>
               </div>
@@ -169,6 +235,7 @@ const Register = () => {
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                     required
+                    minLength={6}
                   />
                 </div>
               </div>
