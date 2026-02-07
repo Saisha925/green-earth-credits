@@ -12,13 +12,14 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { ArrowLeft, Leaf, AlertTriangle, CheckCircle, Shield, Info, Lock } from "lucide-react";
+import { ArrowLeft, Leaf, AlertTriangle, CheckCircle, Shield, Info, Lock, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDemoMode } from "@/contexts/DemoModeContext";
 import { calculateRetirementFees, PLATFORM_FEE_PERCENTAGE } from "@/lib/platformFees";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
+import { initiateRazorpayPayment, RazorpayPaymentData } from "@/lib/razorpay";
 
 const projectData = {
   id: "1",
@@ -74,41 +75,72 @@ const Retire = () => {
       return;
     }
 
-    // Real mode — save to database
-    if (!user) {
+    // Real mode — initiate Razorpay payment
+    if (!user || !profile) {
       setIsLoading(false);
+      toast.error("Unable to process payment. Please ensure your profile is loaded.");
       return;
     }
 
-    const certificateId = `CERT-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    try {
+      const certificateId = `CERT-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      
+      // Initiate Razorpay payment
+      await initiateRazorpayPayment(
+        fees.totalAmountPaid,
+        user.email || "user@example.com",
+        profile.full_name || "User",
+        async (paymentData: RazorpayPaymentData) => {
+          // Payment successful — save to database
+          try {
+            const { error } = await supabase.from("retirement_records").insert({
+              buyer_id: user.id,
+              project_name: projectData.title,
+              seller_name: "Marketplace Seller",
+              tonnes,
+              price_per_tonne: projectData.pricePerTonne,
+              credit_subtotal: fees.creditSubtotal,
+              platform_fee_percentage: PLATFORM_FEE_PERCENTAGE,
+              platform_fee_amount: fees.platformFeeAmount,
+              total_amount_paid: fees.totalAmountPaid,
+              seller_amount: fees.sellerAmount,
+              beneficiary_name: beneficiary,
+              message,
+              certificate_id: certificateId,
+              status: "retired",
+              razorpay_payment_id: paymentData.razorpay_payment_id,
+              razorpay_order_id: paymentData.razorpay_order_id,
+            });
 
-    const { error } = await supabase.from("retirement_records").insert({
-      buyer_id: user.id,
-      project_name: projectData.title,
-      seller_name: "Marketplace Seller",
-      tonnes,
-      price_per_tonne: projectData.pricePerTonne,
-      credit_subtotal: fees.creditSubtotal,
-      platform_fee_percentage: PLATFORM_FEE_PERCENTAGE,
-      platform_fee_amount: fees.platformFeeAmount,
-      total_amount_paid: fees.totalAmountPaid,
-      seller_amount: fees.sellerAmount,
-      beneficiary_name: beneficiary,
-      message,
-      certificate_id: certificateId,
-      status: "retired",
-    });
+            setIsLoading(false);
 
-    setIsLoading(false);
+            if (error) {
+              toast.error("Failed to save retirement record. Please contact support.");
+              console.error("Database error:", error);
+              return;
+            }
 
-    if (error) {
-      toast.error("Failed to retire credits. Please try again.");
-      console.error("Retirement error:", error);
-      return;
+            toast.success("Carbon credits retired successfully!", {
+              description: "Your retirement certificate has been generated.",
+            });
+            navigate("/profile");
+          } catch (dbError) {
+            setIsLoading(false);
+            toast.error("Failed to save retirement record.");
+            console.error("Error saving record:", dbError);
+          }
+        },
+        (error: Error) => {
+          setIsLoading(false);
+          toast.error(error.message || "Payment failed. Please try again.");
+          console.error("Payment error:", error);
+        }
+      );
+    } catch (error) {
+      setIsLoading(false);
+      toast.error("Failed to initiate payment. Please try again.");
+      console.error("Error initiating payment:", error);
     }
-
-    toast.success("Carbon credits retired successfully!");
-    navigate("/profile");
   };
 
   const isAuthenticated = user || isDemoMode;
@@ -336,17 +368,22 @@ const Retire = () => {
                   {isLoading ? (
                     <span className="flex items-center gap-2">
                       <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      Processing...
+                      Processing Payment...
                     </span>
                   ) : !isAuthenticated ? (
                     <span className="flex items-center gap-2">
                       <Lock className="w-5 h-5" />
                       Log in to Retire
                     </span>
-                  ) : (
+                  ) : isDemoMode ? (
                     <span className="flex items-center gap-2">
                       <Leaf className="w-5 h-5" />
-                      Retire Carbon
+                      Retire Carbon (Demo)
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <CreditCard className="w-5 h-5" />
+                      Pay ${fees.totalAmountPaid.toFixed(2)} & Retire
                     </span>
                   )}
                 </Button>

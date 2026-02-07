@@ -1,0 +1,26 @@
+{
+  "name": "razorpay-backend",
+  "version": "1.0.0",
+  "description": "Backend server for Razorpay payment integration",
+  "main": "razorpay-server.js",
+  "scripts": {
+    "start": "node razorpay-server.js",
+    "dev": "nodemon razorpay-server.js"
+  },
+  "keywords": [
+    "razorpay",
+    "payment",
+    "carbon-credits"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "razorpay": "^2.9.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
