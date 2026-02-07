@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,7 @@ const dashboardCards = [
 ];
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { isDemoMode, demoRole } = useDemoMode();
   const { profile, role } = useProfile();
   const { user } = useAuth();
@@ -76,6 +77,14 @@ const Dashboard = () => {
   // Use real role when authenticated, demo role for demo mode
   const activeRole = isDemoMode ? demoRole : (role || "buyer");
   const displayName = profile?.full_name || user?.email?.split("@")[0] || "User";
+
+  // Handle seller button click with role-based access
+  const handleSellerClick = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    if (isDemoMode || role === "seller") {
+      navigate("/sell");
+    }
+  };
 
   // Calculate real stats from retirement records
   const totalRetired = records.reduce((sum: number, r: any) => sum + r.tonnes, 0);
@@ -122,7 +131,12 @@ const Dashboard = () => {
                 <ShoppingCart className="w-4 h-4 mr-2" />
                 Buyer
               </TabsTrigger>
-              <TabsTrigger value="seller" className="h-10 text-base" disabled={isDemoMode}>
+              <TabsTrigger 
+                value="seller" 
+                className="h-10 text-base" 
+                disabled={isDemoMode}
+                onClick={handleSellerClick}
+              >
                 <Store className="w-4 h-4 mr-2" />
                 Seller
               </TabsTrigger>
