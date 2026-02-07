@@ -24,27 +24,38 @@ export const useSellerListings = () => {
   const { user } = useAuth();
   const [listings, setListings] = useState<CreditListing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<any>(null);
 
   const fetchListings = async () => {
     if (!user) {
       setListings([]);
       setIsLoading(false);
+      setError(null);
       return;
     }
 
-    const { data, error } = await supabase
-      .from("credit_listings")
-      .select("*")
-      .eq("seller_id", user.id)
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error: dbError } = await supabase
+        .from("credit_listings")
+        .select("*")
+        .eq("seller_id", user.id)
+        .order("created_at", { ascending: false });
 
-    if (data) {
-      setListings(data as CreditListing[]);
+      if (dbError) {
+        console.error("Error fetching listings:", dbError);
+        setError(dbError);
+        setListings([]);
+      } else if (data) {
+        setListings(data as CreditListing[]);
+        setError(null);
+      }
+    } catch (err) {
+      console.error("Unexpected error fetching listings:", err);
+      setError(err);
+      setListings([]);
+    } finally {
+      setIsLoading(false);
     }
-    if (error) {
-      console.error("Error fetching listings:", error);
-    }
-    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -85,18 +96,23 @@ export const useSellerListings = () => {
         seller_id: user.id,
       })
       .select()
-      .single();
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error adding listing:", error);
+    }
 
     return { data, error };
   };
 
-  return { listings, isLoading, addListing, refetchListings: fetchListings };
+  return { listings, isLoading, error, addListing, refetchListings: fetchListings };
 };
 
 export const useRetirementRecords = () => {
   const { user } = useAuth();
   const [records, setRecords] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<any>(null);
 
   useEffect(() => {
     const fetchRecords = async () => {
@@ -106,19 +122,32 @@ export const useRetirementRecords = () => {
         return;
       }
 
-      const { data, error } = await supabase
-        .from("retirement_records")
-        .select("*")
-        .eq("buyer_id", user.id)
-        .order("created_at", { ascending: false });
+      try {
+        const { data, error: dbError } = await supabase
+          .from("retirement_records")
+          .select("*")
+          .eq("buyer_id", user.id)
+          .order("created_at", { ascending: false });
 
-      if (data) setRecords(data);
-      if (error) console.error("Error fetching retirement records:", error);
-      setIsLoading(false);
+        if (dbError) {
+          console.error("Error fetching retirement records:", dbError);
+          setError(dbError);
+          setRecords([]);
+        } else if (data) {
+          setRecords(data);
+          setError(null);
+        }
+      } catch (err) {
+        console.error("Unexpected error fetching records:", err);
+        setError(err);
+        setRecords([]);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchRecords();
   }, [user]);
 
-  return { records, isLoading };
+  return { records, isLoading, error };
 };

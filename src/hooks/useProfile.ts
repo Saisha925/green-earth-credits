@@ -20,12 +20,14 @@ export const useProfile = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<any>(null);
 
   const fetchProfile = async () => {
     if (!user) {
       setProfile(null);
       setRole(null);
       setIsLoading(false);
+      setError(null);
       return;
     }
 
@@ -44,14 +46,22 @@ export const useProfile = () => {
           .maybeSingle(),
       ]);
 
-      if (profileRes.data) {
+      if (profileRes.error) {
+        console.error("Error fetching profile:", profileRes.error);
+        setError(profileRes.error);
+      } else if (profileRes.data) {
         setProfile(profileRes.data as UserProfile);
+        setError(null);
       }
-      if (roleRes.data) {
+
+      if (roleRes.error) {
+        console.error("Error fetching role:", roleRes.error);
+      } else if (roleRes.data) {
         setRole(roleRes.data.role as AppRole);
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
+      setError(error);
     } finally {
       setIsLoading(false);
     }
@@ -69,7 +79,12 @@ export const useProfile = () => {
       .update(updates)
       .eq("user_id", user.id)
       .select()
-      .single();
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error updating profile:", error);
+      return { data: null, error };
+    }
 
     if (data) {
       setProfile(data as UserProfile);
@@ -78,5 +93,5 @@ export const useProfile = () => {
     return { data, error };
   };
 
-  return { profile, role, isLoading, updateProfile, refetchProfile: fetchProfile };
+  return { profile, role, isLoading, error, updateProfile, refetchProfile: fetchProfile };
 };

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { generateCertificatePDF } from "@/lib/certificateGenerator";
 
 const Profile = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, role, isLoading: profileLoading, updateProfile } = useProfile();
   const { listings } = useSellerListings();
@@ -60,21 +62,31 @@ const Profile = () => {
   };
 
   const handleGenerateCertificate = (record: any) => {
-    generateCertificatePDF({
-      certificateId: record.certificate_id,
-      buyerName: profile?.full_name || "User",
-      buyerId: user?.id || "",
-      sellerName: record.seller_name || "Marketplace Seller",
-      projectName: record.project_name,
-      tonnes: record.tonnes,
-      pricePerTonne: Number(record.price_per_tonne),
-      totalAmount: Number(record.total_amount_paid),
-      platformFee: Number(record.platform_fee_amount),
-      beneficiaryName: record.beneficiary_name,
-      date: new Date(record.created_at).toLocaleDateString(),
-      status: record.status,
-    });
-    toast.success("Certificate PDF downloaded!");
+    try {
+      if (!record.certificate_id || !record.tonnes || !record.project_name) {
+        toast.error("Certificate data is incomplete. Cannot generate PDF.");
+        return;
+      }
+
+      generateCertificatePDF({
+        certificateId: record.certificate_id || "CERT-UNKNOWN",
+        buyerName: profile?.full_name || "User",
+        buyerId: user?.id || "",
+        sellerName: record.seller_name || "Marketplace Seller",
+        projectName: record.project_name || "Unknown Project",
+        tonnes: Number(record.tonnes) || 0,
+        pricePerTonne: Number(record.price_per_tonne) || 0,
+        totalAmount: Number(record.total_amount_paid) || 0,
+        platformFee: Number(record.platform_fee_amount) || 0,
+        beneficiaryName: record.beneficiary_name || "Unknown",
+        date: new Date(record.created_at).toLocaleDateString(),
+        status: record.status || "completed",
+      });
+      toast.success("Certificate PDF downloaded!");
+    } catch (err) {
+      console.error("Error generating certificate:", err);
+      toast.error("Failed to generate certificate. Please try again.");
+    }
   };
 
   const displayName = profile?.full_name || user?.email?.split("@")[0] || "User";
@@ -284,7 +296,10 @@ const Profile = () => {
               ) : (
                 <div className="glass-card rounded-2xl p-12 text-center">
                   <p className="text-muted-foreground mb-4">You haven't listed any credits yet.</p>
-                  <Button className="gradient-primary text-primary-foreground">
+                  <Button 
+                    className="gradient-primary text-primary-foreground"
+                    onClick={() => navigate("/sell")}
+                  >
                     List Your First Credits
                   </Button>
                 </div>

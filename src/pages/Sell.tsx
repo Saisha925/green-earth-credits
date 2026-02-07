@@ -75,33 +75,58 @@ const Sell = () => {
       return;
     }
 
-    setIsLoading(true);
+    // Validate numeric fields
+    const creditsNum = parseInt(formData.credits);
+    const vintageNum = parseInt(formData.vintageYear);
+    const priceNum = parseFloat(formData.pricePerTonne);
 
-    // Save listing to database
-    const { error } = await supabase.from("credit_listings").insert({
-      seller_id: user.id,
-      project_name: formData.projectName,
-      description: `Listed by ${formData.ownerName}`,
-      category: formData.category,
-      registry: formData.registry,
-      credits: parseInt(formData.credits),
-      vintage_year: parseInt(formData.vintageYear),
-      price_per_tonne: parseFloat(formData.pricePerTonne),
-      latitude: formData.latitude ? parseFloat(formData.latitude) : null,
-      longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-      country: formData.country,
-    });
-
-    setIsLoading(false);
-
-    if (error) {
-      toast.error("Failed to list credits. Please try again.");
-      console.error("Listing error:", error);
+    if (isNaN(creditsNum) || creditsNum <= 0) {
+      toast.error("Credits must be a positive number");
       return;
     }
 
-    toast.success("Your credits have been listed successfully!");
-    navigate("/dashboard");
+    if (isNaN(vintageNum) || vintageNum < 1990 || vintageNum > new Date().getFullYear()) {
+      toast.error("Please enter a valid vintage year");
+      return;
+    }
+
+    if (isNaN(priceNum) || priceNum <= 0) {
+      toast.error("Price per tonne must be a positive number");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Save listing to database
+      const { error } = await supabase.from("credit_listings").insert({
+        seller_id: user.id,
+        project_name: formData.projectName,
+        description: `Listed by ${formData.ownerName}`,
+        category: formData.category,
+        registry: formData.registry,
+        credits: creditsNum,
+        vintage_year: vintageNum,
+        price_per_tonne: priceNum,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+        country: formData.country,
+      });
+
+      if (error) {
+        toast.error("Failed to list credits. Please try again.");
+        console.error("Listing error:", error);
+        setIsLoading(false);
+        return;
+      }
+
+      toast.success("Your credits have been listed successfully!");
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Unexpected error listing credits:", err);
+      toast.error("An unexpected error occurred. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -16,14 +16,15 @@ interface CertificateData {
 }
 
 export const generateCertificatePDF = (data: CertificateData) => {
-  const doc = new jsPDF({
-    orientation: "landscape",
-    unit: "mm",
-    format: "a4",
-  });
+  try {
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4",
+    });
 
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
   // Background
   doc.setFillColor(15, 23, 42); // dark background
@@ -130,6 +131,10 @@ export const generateCertificatePDF = (data: CertificateData) => {
     { align: "center" }
   );
 
-  // Download
-  doc.save(`certificate-${data.certificateId}.pdf`);
+    // Download
+    doc.save(`certificate-${data.certificateId}.pdf`);
+  } catch (error) {
+    console.error("Error generating certificate PDF:", error);
+    throw error;
+  }
 };
