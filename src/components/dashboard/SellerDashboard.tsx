@@ -89,6 +89,7 @@ export const SellerDashboard = () => {
   };
 
   return (
+  <>
     <div className="space-y-6">
       {/* Notifications Banner */}
       {pendingRequests.length > 0 && (
@@ -99,7 +100,8 @@ export const SellerDashboard = () => {
             </div>
             <div className="flex-1">
               <p className="font-medium text-foreground">
-                {pendingRequests.length} New Retirement Request{pendingRequests.length > 1 ? 's' : ''}
+                {pendingRequests.length} New Retirement Request
+                {pendingRequests.length > 1 ? "s" : ""}
               </p>
               <p className="text-sm text-muted-foreground">
                 Upload proof to release payment
@@ -126,11 +128,15 @@ export const SellerDashboard = () => {
             <TableBody>
               {retirementRequests.map((request) => (
                 <TableRow key={request.id}>
-                  <TableCell className="font-medium">{request.projectName}</TableCell>
+                  <TableCell className="font-medium">
+                    {request.projectName}
+                  </TableCell>
                   <TableCell>{request.buyerName}</TableCell>
                   <TableCell>{request.tonnes} t</TableCell>
+
                   <TableCell>
-                    {request.status === "pending" && countdowns[request.id] !== undefined ? (
+                    {request.status === "pending" &&
+                    countdowns[request.id] !== undefined ? (
                       <span className="text-accent-foreground font-mono">
                         {formatCountdown(countdowns[request.id])}
                       </span>
@@ -138,7 +144,11 @@ export const SellerDashboard = () => {
                       <span className="text-muted-foreground">-</span>
                     )}
                   </TableCell>
-                  <TableCell>{getStatusBadge(request.status)}</TableCell>
+
+                  <TableCell>
+                    {getStatusBadge(request.status)}
+                  </TableCell>
+
                   <TableCell>
                     {request.status === "pending" && (
                       <Button
@@ -150,8 +160,11 @@ export const SellerDashboard = () => {
                         Upload Proof
                       </Button>
                     )}
+
                     {request.status === "verified" && (
-                      <span className="text-sm text-primary">Payment Released</span>
+                      <span className="text-sm text-primary">
+                        Payment Released
+                      </span>
                     )}
                   </TableCell>
                 </TableRow>
@@ -162,10 +175,15 @@ export const SellerDashboard = () => {
       ) : (
         <div className="glass-card rounded-2xl p-12 text-center">
           <p className="text-muted-foreground">
-            No retirement requests yet. When buyers retire credits, they'll appear here.
+            No retirement requests yet. When buyers retire credits,
+            they'll appear here.
           </p>
         </div>
       )}
     </div>
-  );
+
+    
+  </>
+);
+
 };

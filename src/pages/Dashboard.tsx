@@ -1,3 +1,4 @@
+import ChatbotWidget from "@/components/chatbot/ChatbotWidget";
 import { Link } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -245,6 +246,7 @@ const Dashboard = () => {
       </main>
 
       <Footer />
+      <ChatbotWidget />
     </div>
   );
 };

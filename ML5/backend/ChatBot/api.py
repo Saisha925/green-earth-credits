@@ -1,3 +1,7 @@
+from dotenv import load_dotenv
+load_dotenv()
+
+from flask_cors import CORS
 import os
 
 from flask import Flask, jsonify, request
@@ -13,6 +17,8 @@ from utils.helpers import get_groq_client
 from utils.db import seed_if_empty
 
 app = Flask(__name__)
+CORS(app)
+
 
 
 def validate_dependencies():
@@ -83,49 +89,65 @@ def route_only():
     if not message:
         return jsonify({"error": "message is required"}), 400
 
-    intent = route_intent(message)
-    return jsonify({"intent": intent})
+    print("Message received:", message)
+
+    intent = "test"
+    response = "Backend is connected successfully."
+
+    return jsonify({
+    "intent": intent,
+    "response": response
+})
+
+
+
 
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    payload = request.get_json(silent=True) or {}
-    message = (payload.get("message") or "").strip()
-    profile = (payload.get("profile") or "").strip().lower()
-    role = (payload.get("role") or "").strip().lower()
+    try:
+        payload = request.get_json(silent=True) or {}
+        message = (payload.get("message") or "").strip()
+        role = (payload.get("role") or "").strip().lower()
 
-    if not message:
-        return jsonify({"error": "message is required"}), 400
+        print("CHAT HIT:", message, role)
 
-    error = validate_dependencies()
-    if error is not None:
-        return jsonify({"error": "Dependency configuration error", "details": error}), 500
+        if not message:
+            return jsonify({"error": "message is required"}), 400
 
-    intent = route_intent(message)
-    session_context = ""
-    if role in {"buyer", "seller"}:
-        session_context = f"User role: {role}\n"
+        # Optional session context
+        session_context = ""
+        if role in {"buyer", "seller"}:
+            session_context = f"User role: {role}\n"
 
-    # Allow explicit profile override for recommendations
-    if intent == "recommendation":
-        users = get_users()
-        if profile and profile in users:
-            user_hint = f"User profile: {users[profile]['label']}\n"
-            response = answer_recommendation_question(user_hint + message, session_context=session_context)
-        else:
+        # Detect intent
+        intent = route_intent(message)
+
+        # Route to correct agent
+        if intent == "recommendation":
             response = answer_recommendation_question(message, session_context=session_context)
-    elif intent == "market_analysis":
-        response = answer_market_question(message)
-    elif intent == "emissions":
-        response = answer_emission_question(message, session_context=session_context)
-    elif intent == "theory":
-        response = answer_theory_question(message)
-    elif intent == "insights":
-        response = answer_insight_question(message)
-    else:
-        response = answer_market_question(message)
+        elif intent == "market_analysis":
+            response = answer_market_question(message)
+        elif intent == "emissions":
+            response = answer_emission_question(message, session_context=session_context)
+        elif intent == "theory":
+            response = answer_theory_question(message)
+        elif intent == "insights":
+            response = answer_insight_question(message)
+        else:
+            response = answer_market_question(message)
 
-    return jsonify({"intent": intent, "response": response})
+        return jsonify({
+            "intent": intent,
+            "response": response
+        })
+
+    except Exception as e:
+        print("CHAT ERROR:", str(e))
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 
 
 @app.route("/data/marketplace", methods=["GET"])
@@ -145,4 +167,6 @@ def theory_data():
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
-    app.run(host="127.0.0.1", port=port, debug=False)
+    app.run(host="127.0.0.1", port=port, debug=True, use_reloader=False)
+
+
