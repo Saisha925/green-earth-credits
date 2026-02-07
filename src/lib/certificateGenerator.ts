@@ -5,6 +5,7 @@ interface CertificateData {
   buyerName: string;
   buyerId: string;
   sellerName: string;
+  sellerCompanyName?: string;
   projectName: string;
   tonnes: number;
   pricePerTonne: number;
@@ -13,6 +14,9 @@ interface CertificateData {
   beneficiaryName: string;
   date: string;
   status: string;
+  registryType?: string;
+  category?: string;
+  vintageYear?: number;
 }
 
 export const generateCertificatePDF = (data: CertificateData) => {
@@ -73,15 +77,15 @@ export const generateCertificatePDF = (data: CertificateData) => {
   };
 
   // Left column
-  addField("BENEFICIARY", data.beneficiaryName, leftCol, y);
+  addField("BENEFICIARY", data.beneficiaryName || data.sellerName, leftCol, y);
   addField("BUYER NAME", data.buyerName, leftCol, y + 18);
   addField("BUYER ID", data.buyerId.substring(0, 8) + "...", leftCol, y + 36);
   addField("PROJECT", data.projectName.length > 35 ? data.projectName.substring(0, 35) + "..." : data.projectName, leftCol, y + 54);
 
   // Right column
   addField("SELLER", data.sellerName || "Marketplace Seller", rightCol, y);
-  addField("TONNES RETIRED", `${data.tonnes} tCO₂e`, rightCol, y + 18);
-  addField("PRICE PER TONNE", `$${data.pricePerTonne.toFixed(2)}`, rightCol, y + 36);
+  addField("REGISTRY", data.registryType || "Verified Registry", rightCol, y + 18);
+  addField("TONNES RETIRED", `${data.tonnes} tCO₂e`, rightCol, y + 36);
   addField("DATE OF ISSUE", data.date, rightCol, y + 54);
 
   // Financial summary box

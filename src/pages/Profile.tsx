@@ -65,14 +65,18 @@ const Profile = () => {
       buyerName: profile?.full_name || "User",
       buyerId: user?.id || "",
       sellerName: record.seller_name || "Marketplace Seller",
+      sellerCompanyName: record.seller_company || undefined,
       projectName: record.project_name,
       tonnes: record.tonnes,
       pricePerTonne: Number(record.price_per_tonne),
       totalAmount: Number(record.total_amount_paid),
       platformFee: Number(record.platform_fee_amount),
-      beneficiaryName: record.beneficiary_name,
+      beneficiaryName: record.beneficiary_name || record.seller_name,
       date: new Date(record.created_at).toLocaleDateString(),
       status: record.status,
+      registryType: record.registry || "Verified Registry",
+      category: record.category || "Carbon Credits",
+      vintageYear: record.vintage_year,
     });
     toast.success("Certificate PDF downloaded!");
   };
