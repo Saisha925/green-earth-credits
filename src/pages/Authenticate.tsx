@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -16,6 +16,7 @@ const Authenticate = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [status, setStatus] = useState<"idle" | "uploading" | "verifying" | "success" | "error">("idle");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const isAuthenticated = user || isDemoMode;
 
@@ -60,6 +61,20 @@ const Authenticate = () => {
     }
   };
 
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [file]);
+
   const handleAuthenticate = async () => {
     if (!isAuthenticated) {
       toast.error("Please log in to authenticate certificates");
@@ -73,23 +88,34 @@ const Authenticate = () => {
 
     setStatus("uploading");
 
-    // Simulate upload
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setStatus("verifying");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
 
-    // Simulate verification
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+      const request = fetch("/server/api/authenticate-certificate", {
+        method: "POST",
+        body: formData,
+      });
 
-    // Randomly succeed or fail for demo
-    const isValid = Math.random() > 0.3;
-    setStatus(isValid ? "success" : "error");
+      setStatus("verifying");
+      const response = await request;
+      const payload = await response.json();
 
-    if (isValid) {
+      if (!response.ok || !payload.success) {
+        setStatus("error");
+        toast.error("Certificate verification failed. Please try again.");
+        return;
+      }
+
+      localStorage.setItem("authenticatedCertificate", JSON.stringify(payload.data));
+      setStatus("success");
       toast.success("Certificate verified successfully!");
       setTimeout(() => {
         navigate("/sell");
       }, 1500);
-    } else {
+    } catch (error) {
+      console.error("Authentication error:", error);
+      setStatus("error");
       toast.error("Certificate verification failed. Please try again.");
     }
   };
@@ -167,6 +193,23 @@ const Authenticate = () => {
                       {(file.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
+                  {previewUrl && (
+                    <div className="rounded-xl border border-border overflow-hidden bg-background">
+                      {file.type.startsWith("image/") ? (
+                        <img
+                          src={previewUrl}
+                          alt="Certificate preview"
+                          className="w-full max-h-64 object-contain"
+                        />
+                      ) : (
+                        <iframe
+                          title="Certificate preview"
+                          src={previewUrl}
+                          className="w-full h-64"
+                        />
+                      )}
+                    </div>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"

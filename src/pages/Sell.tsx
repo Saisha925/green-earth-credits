@@ -17,7 +17,6 @@ import { LocationPicker } from "@/components/map/LocationPicker";
 import { Store, MapPin, DollarSign, Calendar, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 
 const categories = [
   "Reforestation",
@@ -77,30 +76,49 @@ const Sell = () => {
 
     setIsLoading(true);
 
-    // Save listing to database
-    const { error } = await supabase.from("credit_listings").insert({
-      seller_id: user.id,
-      project_name: formData.projectName,
-      description: `Listed by ${formData.ownerName}`,
-      category: formData.category,
-      registry: formData.registry,
-      credits: parseInt(formData.credits),
-      vintage_year: parseInt(formData.vintageYear),
-      price_per_tonne: parseFloat(formData.pricePerTonne),
-      latitude: formData.latitude ? parseFloat(formData.latitude) : null,
-      longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-      country: formData.country,
+    const storedCertificate = localStorage.getItem("authenticatedCertificate");
+    let authenticationData: Record<string, unknown> | null = null;
+
+    if (storedCertificate) {
+      try {
+        authenticationData = JSON.parse(storedCertificate) as Record<string, unknown>;
+      } catch (error) {
+        console.error("Failed to parse stored certificate data:", error);
+      }
+    }
+
+    const response = await fetch("/server/api/list-certificate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        listing: {
+          projectName: formData.projectName,
+          ownerName: formData.ownerName,
+          category: formData.category,
+          registry: formData.registry,
+          credits: formData.credits,
+          vintageYear: formData.vintageYear,
+          pricePerTonne: formData.pricePerTonne,
+          latitude: formData.latitude,
+          longitude: formData.longitude,
+          country: formData.country,
+          sellerId: user.id,
+          sellerEmail: user.email,
+        },
+        authentication: authenticationData,
+      }),
     });
 
     setIsLoading(false);
 
-    if (error) {
+    if (!response.ok) {
       toast.error("Failed to list credits. Please try again.");
-      console.error("Listing error:", error);
+      console.error("Listing error:", await response.text());
       return;
     }
 
     toast.success("Your credits have been listed successfully!");
+    localStorage.removeItem("authenticatedCertificate");
     navigate("/home");
   };
 
