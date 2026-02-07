@@ -32,6 +32,14 @@ const defaultImages: Record<string, string> = {
   "Energy Efficiency": "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=600&h=400&fit=crop",
 };
 
+const normalizeRegistry = (registry: string) => {
+  if (registry.toLowerCase().includes("verra")) return "Verra";
+  if (registry.toLowerCase().includes("gold")) return "Gold Standard";
+  if (registry.toLowerCase().includes("american")) return "American Carbon Registry";
+  if (registry.toLowerCase().includes("climate")) return "Climate Action Reserve";
+  return registry;
+};
+
 const sendJson = (res: ServerResponse, statusCode: number, payload: Record<string, unknown>) => {
   res.statusCode = statusCode;
   res.setHeader("Content-Type", "application/json");
@@ -65,7 +73,7 @@ const handler = async (req: IncomingMessage, res: ServerResponse) => {
       category: listing.category,
       vintage: Number(listing.vintageYear),
       verified: true,
-      registry: listing.registry,
+      registry: normalizeRegistry(listing.registry),
       credits: Number(listing.credits),
       seller: {
         id: listing.sellerId ?? null,

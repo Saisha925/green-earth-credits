@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -16,6 +16,7 @@ const Authenticate = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [status, setStatus] = useState<"idle" | "uploading" | "verifying" | "success" | "error">("idle");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const isAuthenticated = user || isDemoMode;
 
@@ -59,6 +60,20 @@ const Authenticate = () => {
       setStatus("idle");
     }
   };
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [file]);
 
   const handleAuthenticate = async () => {
     if (!isAuthenticated) {
@@ -178,6 +193,23 @@ const Authenticate = () => {
                       {(file.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
+                  {previewUrl && (
+                    <div className="rounded-xl border border-border overflow-hidden bg-background">
+                      {file.type.startsWith("image/") ? (
+                        <img
+                          src={previewUrl}
+                          alt="Certificate preview"
+                          className="w-full max-h-64 object-contain"
+                        />
+                      ) : (
+                        <iframe
+                          title="Certificate preview"
+                          src={previewUrl}
+                          className="w-full h-64"
+                        />
+                      )}
+                    </div>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"

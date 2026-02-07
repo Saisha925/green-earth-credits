@@ -17,17 +17,18 @@ const extractTextFromPdf = async (buffer: Buffer): Promise<string> => {
 };
 
 const extractCertificateFields = (text: string) => {
+  const cleanedText = text.replace(/\r/g, "").replace(/[ \t]+/g, " ");
   const patterns: Record<string, RegExp> = {
-    project_name: /Project Name:\s*(.+)/i,
+    project_name: /Project Name:\s*([^\n]+)/i,
     vintage: /Vintage Year:\s*(\d{4})/i,
-    country: /Country:\s*(.+)/i,
-    methodology: /Methodology:\s*(.+)/i,
+    country: /Country:\s*([^\n]+)/i,
+    methodology: /Methodology:\s*([^\n]+)/i,
   };
 
   const fields: Record<string, string> = {};
 
   Object.entries(patterns).forEach(([key, pattern]) => {
-    const match = text.match(pattern);
+    const match = cleanedText.match(pattern);
     if (match?.[1]) {
       fields[key] = match[1].trim();
     }
@@ -55,8 +56,10 @@ const fetchCarbonmarkListings = async (): Promise<Record<string, unknown>[]> => 
 };
 
 const similarity = (left: string, right: string): number => {
-  const a = left.toLowerCase();
-  const b = right.toLowerCase();
+  const normalize = (value: string) =>
+    value.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+  const a = normalize(left);
+  const b = normalize(right);
   if (!a && !b) return 1;
   if (!a || !b) return 0;
 
@@ -116,7 +119,7 @@ const authenticateCertificate = (
   });
 
   return {
-    authenticated: bestScore >= 0.75,
+    authenticated: bestScore >= 0.6,
     confidence: Number(bestScore.toFixed(2)),
     matched_credit_id: bestMatch ? (bestMatch.creditId as string | undefined) ?? null : null,
     matched_project: bestMatch ? (bestMatch.project as Record<string, unknown> | undefined) ?? null : null,
@@ -157,7 +160,10 @@ const handler = async (req: IncomingMessage, res: ServerResponse) => {
       return;
     }
 
-    if (!file.mimetype || !file.mimetype.includes("pdf")) {
+    const isPdf =
+      file.mimetype?.includes("pdf") ||
+      file.originalFilename?.toLowerCase().endsWith(".pdf");
+    if (!isPdf) {
       sendJson(res, 200, { success: false, error: "Unsupported file type" });
       return;
     }
