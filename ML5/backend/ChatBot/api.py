@@ -12,7 +12,7 @@ from agents.recommendation_agent import answer_recommendation_question
 from agents.emission_agent import answer_emission_question
 from agents.theory_agent import answer_theory_question
 from agents.insight_agent import answer_insight_question
-from utils.data_store import get_credits, get_sellers, get_users, get_theory
+from utils.data_store import get_credits, get_sellers, get_users, get_theory, save_user_footprint, get_user_footprint
 from utils.helpers import get_groq_client
 from utils.db import seed_if_empty
 
@@ -109,16 +109,19 @@ def chat():
         payload = request.get_json(silent=True) or {}
         message = (payload.get("message") or "").strip()
         role = (payload.get("role") or "").strip().lower()
+        user_id = (payload.get("user_id") or "").strip()
 
-        print("CHAT HIT:", message, role)
+        print("CHAT HIT:", message, role, user_id)
 
         if not message:
             return jsonify({"error": "message is required"}), 400
 
-        # Optional session context
+        # Optional session context including user info
         session_context = ""
         if role in {"buyer", "seller"}:
             session_context = f"User role: {role}\n"
+        if user_id:
+            session_context += f"user_id: {user_id}\n"
 
         # Detect intent
         intent = route_intent(message)
@@ -163,6 +166,62 @@ def sellers_data():
 @app.route("/data/theory", methods=["GET"])
 def theory_data():
     return jsonify({"theory": get_theory()})
+
+
+@app.route("/footprint/save", methods=["POST"])
+def save_footprint():
+    """Save a user's carbon footprint calculation."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        user_id = (payload.get("user_id") or "").strip()
+        footprint_data = payload.get("footprint_data", {})
+
+        if not user_id:
+            return jsonify({"error": "user_id is required"}), 400
+        
+        if not footprint_data:
+            return jsonify({"error": "footprint_data is required"}), 400
+
+        result = save_user_footprint(user_id, footprint_data)
+        return jsonify({
+            "status": "success",
+            "message": "Footprint saved successfully",
+            "data": result
+        })
+
+    except Exception as e:
+        print("FOOTPRINT SAVE ERROR:", str(e))
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/footprint/get/<user_id>", methods=["GET"])
+def get_footprint(user_id: str):
+    """Retrieve a user's saved carbon footprint."""
+    try:
+        if not user_id:
+            return jsonify({"error": "user_id is required"}), 400
+
+        footprint = get_user_footprint(user_id)
+        
+        if not footprint:
+            return jsonify({
+                "status": "not_found",
+                "message": "No footprint found for this user",
+                "data": None
+            })
+
+        return jsonify({
+            "status": "success",
+            "data": footprint
+        })
+
+    except Exception as e:
+        print("FOOTPRINT GET ERROR:", str(e))
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":

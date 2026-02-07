@@ -9,6 +9,8 @@ import { OrganizationForm } from "@/components/calculator/OrganizationForm";
 import { ResultsPanel } from "@/components/calculator/ResultsPanel";
 import { ProjectRecommendations } from "@/components/calculator/ProjectRecommendations";
 import { ReportGenerator } from "@/components/calculator/ReportGenerator";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
 import {
   IndividualInputs,
   OrganizationInputs,
@@ -127,6 +129,8 @@ const Calculator = () => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [recommendations, setRecommendations] = useState<ProjectRecommendation[]>([]);
+  const [previousFootprints, setPreviousFootprints] = useState<any[]>([]);
+  const { user } = useAuth();
 
   const [individualData, setIndividualData] = useState<IndividualInputs>({
     electricityUsage: 0,
@@ -148,6 +152,54 @@ const Calculator = () => {
     transportDistance: 0,
     transportMode: 'truck',
   });
+
+  // Fetch previous footprints when component loads
+  useEffect(() => {
+    if (user) {
+      fetchPreviousFootprints();
+    }
+  }, [user]);
+
+  // Fetch previous footprints
+  const fetchPreviousFootprints = async () => {
+    if (!user) return;
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/footprint/get/${user.id}`);
+      const data = await response.json();
+      if (data.status === 'success' && data.data) {
+        setPreviousFootprints([data.data]);
+      }
+    } catch (error) {
+      console.error('Error fetching footprints:', error);
+    }
+  };
+
+  const saveFootprintToDatabase = async (calcResult: CalculationResult) => {
+    if (!user) return;
+
+    try {
+      await fetch('http://127.0.0.1:8000/footprint/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          footprint_data: {
+            totalEmissions: calcResult.totalEmissions,
+            breakdown: calcResult.breakdown,
+            dominantSector: calcResult.dominantSector,
+            suggestedCredits: calcResult.suggestedCredits,
+            treeEquivalent: calcResult.treeEquivalent,
+            mode: mode,
+            inputs: mode === 'individual' ? individualData : organizationData,
+          }
+        })
+      });
+      // Refresh history after saving
+      fetchPreviousFootprints();
+    } catch (error) {
+      console.error('Error saving footprint:', error);
+    }
+  };
 
   const handleModeChange = (newMode: 'individual' | 'organization') => {
     setMode(newMode);
@@ -178,6 +230,9 @@ const Calculator = () => {
       calcResult.dominantSector
     );
     setRecommendations(recs);
+
+    // Auto-save to database
+    await saveFootprintToDatabase(calcResult);
 
     setIsCalculating(false);
   };
@@ -233,8 +288,70 @@ const Calculator = () => {
             <div className="glass-card rounded-2xl p-8">
               <h2 className="font-semibold text-lg mb-4">Your Results</h2>
               <ResultsPanel result={result} mode={mode} />
+              
+              {result && user && (
+                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-700 font-medium text-center">
+                    ✓ Footprint saved automatically and available in chatbot
+                  </p>
+                </div>
+              )}
+              
+              {result && !user && (
+                <p className="text-sm text-amber-600 mt-4 text-center">
+                  Sign in to save your footprint for chatbot access
+                </p>
+              )}
             </div>
           </div>
+
+          {/* Previous Calculations */}
+          {user && previousFootprints.length > 0 && (
+            <div className="max-w-6xl mx-auto mt-12">
+              <div className="glass-card rounded-2xl p-8">
+                <h2 className="font-semibold text-lg mb-6">📊 Previous Calculations</h2>
+                <div className="space-y-4">
+                  {previousFootprints.map((fp, idx) => (
+                    <div key={idx} className="border-l-4 border-emerald-500 bg-emerald-50 p-4 rounded">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-emerald-900">
+                            {fp.mode === 'individual' ? '👤 Individual' : '🏢 Organization'} Footprint
+                          </p>
+                          <p className="text-2xl font-bold text-emerald-700 mt-2">
+                            {fp.totalEmissions?.toFixed(2) || 0} tonnes CO₂
+                          </p>
+                          <p className="text-sm text-emerald-600 mt-1">
+                            Dominant: {fp.dominantSector || 'N/A'} | Credits needed: {fp.suggestedCredits?.toFixed(0) || 0}
+                          </p>
+                          {fp.timestamp && (
+                            <p className="text-xs text-gray-500 mt-2">
+                              Saved: {new Date(fp.timestamp).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm"
+                          onClick={() => {
+                            // Load this calculation again
+                            if (fp.mode === 'individual' && fp.inputs) {
+                              setMode('individual');
+                              setIndividualData(fp.inputs);
+                            } else if (fp.inputs) {
+                              setMode('organization');
+                              setOrganizationData(fp.inputs);
+                            }
+                          }}
+                        >
+                          Load
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Report Generator */}
           {result && (

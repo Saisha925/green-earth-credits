@@ -1,54 +1,21 @@
-from typing import List, Dict, Optional
+"""Utilities for managing user carbon footprints"""
 
-from utils.db import get_db, seed_if_empty
+from typing import Dict, Optional
 from datetime import datetime
-
-
-def ensure_seeded():
-    seed_if_empty()
-
-
-def get_credits() -> List[Dict]:
-    ensure_seeded()
-    db = get_db()
-    return list(db.credits.find({}, {"_id": 0}))
-
-
-def get_sellers() -> Dict[str, Dict]:
-    ensure_seeded()
-    db = get_db()
-    sellers = list(db.sellers.find({}, {"_id": 0}))
-    return {s["seller_id"]: s for s in sellers}
-
-
-def get_users() -> Dict[str, Dict]:
-    ensure_seeded()
-    db = get_db()
-    users = list(db.users.find({}, {"_id": 0}))
-    return {u["profile_key"]: u for u in users}
-
-
-def get_theory() -> Dict[str, str]:
-    ensure_seeded()
-    db = get_db()
-    theory = list(db.theory.find({}, {"_id": 0}))
-    return {t["topic"]: t["content"] for t in theory}
-
-
-def get_session_profiles() -> Dict[str, Dict]:
-    ensure_seeded()
-    db = get_db()
-    profiles = list(db.session_profiles.find({}, {"_id": 0}))
-    return {p["role"]: p for p in profiles if p.get("role")}
-
-
-def get_session_profile(role: str) -> Dict:
-    profiles = get_session_profiles()
-    return profiles.get(role, {"role": role})
+from utils.data_store import get_db
 
 
 def save_user_footprint(user_id: str, footprint_data: Dict) -> Dict:
-    """Save a user's calculated carbon footprint to the database."""
+    """
+    Save a user's calculated carbon footprint to the database.
+    
+    Args:
+        user_id: Unique identifier for the user
+        footprint_data: Dictionary containing footprint calculation results
+        
+    Returns:
+        The saved footprint document
+    """
     db = get_db()
     
     # Add timestamp
@@ -68,7 +35,15 @@ def save_user_footprint(user_id: str, footprint_data: Dict) -> Dict:
 
 
 def get_user_footprint(user_id: str) -> Optional[Dict]:
-    """Retrieve a user's latest carbon footprint calculation."""
+    """
+    Retrieve a user's latest carbon footprint calculation.
+    
+    Args:
+        user_id: Unique identifier for the user
+        
+    Returns:
+        The footprint document or None if not found
+    """
     db = get_db()
     footprint = db.user_footprints.find_one({"user_id": user_id})
     if footprint:
@@ -77,7 +52,15 @@ def get_user_footprint(user_id: str) -> Optional[Dict]:
 
 
 def format_footprint_for_chat(footprint: Dict) -> str:
-    """Format a footprint dictionary into a readable string for chat agents."""
+    """
+    Format a footprint dictionary into a readable string for chat agents.
+    
+    Args:
+        footprint: The footprint data
+        
+    Returns:
+        Formatted string describing the footprint
+    """
     if not footprint:
         return "No carbon footprint has been calculated yet."
     
