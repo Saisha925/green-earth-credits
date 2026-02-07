@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface CreditListing {
@@ -25,69 +24,67 @@ export const useSellerListings = () => {
   const [listings, setListings] = useState<CreditListing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchListings = async () => {
+  const fetchListings = useCallback(async () => {
     if (!user) {
       setListings([]);
       setIsLoading(false);
       return;
     }
 
-    const { data, error } = await supabase
-      .from("credit_listings")
-      .select("*")
-      .eq("seller_id", user.id)
-      .order("created_at", { ascending: false });
+    try {
+      const res = await fetch(`/api/seller-listings?sellerId=${user.id}`);
+      const data = await res.json();
 
-    if (data) {
-      setListings(data as CreditListing[]);
-    }
-    if (error) {
+      if (res.ok && data.success) {
+        setListings(data.listings as CreditListing[]);
+      }
+    } catch (error) {
       console.error("Error fetching listings:", error);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchListings();
+  }, [fetchListings]);
 
-    // Subscribe to realtime changes
-    if (!user) return;
-
-    const channel = supabase
-      .channel("seller-listings")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "credit_listings",
-          filter: `seller_id=eq.${user.id}`,
-        },
-        () => {
-          // Refetch on any change
-          fetchListings();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
-
-  const addListing = async (listing: Omit<CreditListing, "id" | "seller_id" | "status" | "created_at" | "updated_at">) => {
+  const addListing = async (
+    listing: Omit<CreditListing, "id" | "seller_id" | "status" | "created_at" | "updated_at">
+  ) => {
     if (!user) return { error: new Error("Not authenticated") };
 
-    const { data, error } = await supabase
-      .from("credit_listings")
-      .insert({
-        ...listing,
-        seller_id: user.id,
-      })
-      .select()
-      .single();
+    try {
+      const res = await fetch("/api/seller-listings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sellerId: user.id,
+          projectName: listing.project_name,
+          description: listing.description,
+          category: listing.category,
+          registry: listing.registry,
+          credits: listing.credits,
+          vintageYear: listing.vintage_year,
+          pricePerTonne: listing.price_per_tonne,
+          latitude: listing.latitude,
+          longitude: listing.longitude,
+          country: listing.country,
+        }),
+      });
 
-    return { data, error };
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        // Refetch after adding
+        await fetchListings();
+        return { data: data.listing, error: null };
+      }
+
+      return { data: null, error: new Error(data.error || "Failed to add listing") };
+    } catch (error: any) {
+      return { data: null, error };
+    }
   };
 
   return { listings, isLoading, addListing, refetchListings: fetchListings };
@@ -106,15 +103,18 @@ export const useRetirementRecords = () => {
         return;
       }
 
-      const { data, error } = await supabase
-        .from("retirement_records")
-        .select("*")
-        .eq("buyer_id", user.id)
-        .order("created_at", { ascending: false });
+      try {
+        const res = await fetch(`/api/retirement-records?buyerId=${user.id}`);
+        const data = await res.json();
 
-      if (data) setRecords(data);
-      if (error) console.error("Error fetching retirement records:", error);
-      setIsLoading(false);
+        if (res.ok && data.success) {
+          setRecords(data.records);
+        }
+      } catch (error) {
+        console.error("Error fetching retirement records:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchRecords();

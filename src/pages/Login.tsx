@@ -6,12 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Navbar } from "@/components/layout/Navbar";
 import { Leaf, Mail, Lock, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading, signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -20,10 +19,10 @@ const Login = () => {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (!isLoading && user) {
+    if (!authLoading && user) {
       navigate("/home", { replace: true });
     }
-  }, [user, isLoading, navigate]);
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,21 +34,12 @@ const Login = () => {
 
     setIsLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: formData.email,
-      password: formData.password,
-    });
+    const { error } = await signIn(formData.email, formData.password);
 
     setIsLoading(false);
 
     if (error) {
-      if (error.message.includes("Invalid login credentials")) {
-        toast.error("Invalid email or password. Please try again.");
-      } else if (error.message.includes("Email not confirmed")) {
-        toast.error("Please confirm your email before logging in.");
-      } else {
-        toast.error(error.message);
-      }
+      toast.error(error);
       return;
     }
 
@@ -102,7 +92,7 @@ const Login = () => {
                   <Input
                     id="password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="--------"
                     className="pl-10 h-12"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -131,7 +121,7 @@ const Login = () => {
             </Button>
 
             <div className="text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
+              {"Don't have an account? "}
               <Link to="/register" className="text-primary hover:underline font-medium">
                 Create account
               </Link>

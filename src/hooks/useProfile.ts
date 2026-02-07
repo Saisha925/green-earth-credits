@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface UserProfile {
@@ -30,25 +29,12 @@ export const useProfile = () => {
     }
 
     try {
-      // Fetch profile and role in parallel
-      const [profileRes, roleRes] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle(),
-        supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user.id)
-          .maybeSingle(),
-      ]);
+      const res = await fetch(`/api/auth/profile?userId=${user.id}`);
+      const data = await res.json();
 
-      if (profileRes.data) {
-        setProfile(profileRes.data as UserProfile);
-      }
-      if (roleRes.data) {
-        setRole(roleRes.data.role as AppRole);
+      if (res.ok && data.success) {
+        setProfile(data.profile as UserProfile);
+        setRole(data.role as AppRole);
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -64,18 +50,24 @@ export const useProfile = () => {
   const updateProfile = async (updates: Partial<Pick<UserProfile, "full_name" | "email" | "phone">>) => {
     if (!user) return { error: new Error("Not authenticated") };
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .update(updates)
-      .eq("user_id", user.id)
-      .select()
-      .single();
+    try {
+      const res = await fetch("/api/auth/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, ...updates }),
+      });
 
-    if (data) {
-      setProfile(data as UserProfile);
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setProfile(data.profile as UserProfile);
+        return { data: data.profile, error: null };
+      }
+
+      return { data: null, error: new Error(data.error || "Update failed") };
+    } catch (error: any) {
+      return { data: null, error };
     }
-
-    return { data, error };
   };
 
   return { profile, role, isLoading, updateProfile, refetchProfile: fetchProfile };
