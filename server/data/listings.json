@@ -1,1 +1,42 @@
-[]
+[
+  {
+    "id": "e9365762-b505-413e-9f37-8c10356d8be5",
+    "title": "Amazon forest",
+    "description": "Listed by Cons Int. 300 credits available.",
+    "image": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600&h=400&fit=crop",
+    "pricePerTonne": 18.5,
+    "country": "Brazil",
+    "category": "Avoided Deforestation",
+    "vintage": 2023,
+    "verified": true,
+    "registry": "Verra VCS",
+    "credits": 300,
+    "seller": {
+      "id": "0eaa62ec-9e2c-4e84-b63f-e19719312012",
+      "name": "Cons Int",
+      "email": "saishabhasin@gmail.com"
+    },
+    "certificate": {
+      "project_name": "Forestal Río Aquidabán",
+      "vintage": "2012",
+      "country": "Paraguay",
+      "methodology": "AR-ACM0003"
+    },
+    "authentication": {
+      "authenticated": true,
+      "confidence": 1,
+      "matched_credit_id": "ICR-349-2012",
+      "matched_project": {
+        "id": "ICR-349-2012",
+        "key": "ICR-349",
+        "vintage": "2012",
+        "name": "Forestal Río Aquidabán",
+        "category": "Forestry",
+        "country": "Paraguay",
+        "methodology": "AR-ACM0003",
+        "isExAnte": false
+      }
+    },
+    "createdAt": "2026-02-07T19:03:29.100Z"
+  }
+]

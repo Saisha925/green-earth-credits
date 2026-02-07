@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -50,6 +50,25 @@ const Sell = () => {
     longitude: "",
     country: "",
   });
+
+  // Pre-fill from authenticated certificate when user arrives from Authenticate page
+  useEffect(() => {
+    const stored = localStorage.getItem("authenticatedCertificate");
+    if (!stored) return;
+    try {
+      const data = JSON.parse(stored) as { certificate?: Record<string, string> };
+      const cert = data?.certificate;
+      if (!cert) return;
+      setFormData((prev) => ({
+        ...prev,
+        ...(cert.project_name && { projectName: cert.project_name }),
+        ...(cert.vintage && { vintageYear: cert.vintage }),
+        ...(cert.country && { country: cert.country }),
+      }));
+    } catch {
+      // ignore invalid stored data
+    }
+  }, []);
 
   const handleLocationChange = (lat: number, lng: number) => {
     setFormData({
@@ -119,7 +138,7 @@ const Sell = () => {
 
     toast.success("Your credits have been listed successfully!");
     localStorage.removeItem("authenticatedCertificate");
-    navigate("/home");
+    navigate("/marketplace");
   };
 
   return (

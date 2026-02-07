@@ -15,6 +15,20 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Search, Grid3X3, List, SlidersHorizontal } from "lucide-react";
 
+// Shape used by ProjectCard and filters (API listings match this format)
+type MarketplaceProject = {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  pricePerTonne: number;
+  country: string;
+  category: string;
+  vintage: number;
+  verified: boolean;
+  registry?: string;
+};
+
 // Mock data for projects
 const mockProjects = [
   {
@@ -142,7 +156,7 @@ const Marketplace = () => {
   const [sortBy, setSortBy] = useState("relevance");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
-  const [dynamicListings, setDynamicListings] = useState<typeof mockProjects>([]);
+  const [dynamicListings, setDynamicListings] = useState<MarketplaceProject[]>([]);
 
   useEffect(() => {
     const loadListings = async () => {
@@ -166,7 +180,7 @@ const Marketplace = () => {
   }, []);
 
   const filteredProjects = useMemo(() => {
-    const allProjects = [...dynamicListings, ...mockProjects];
+    const allProjects: MarketplaceProject[] = [...dynamicListings, ...mockProjects];
     let projects = allProjects.filter((project) => {
       // Search query filter
       const matchesSearch = 
@@ -198,7 +212,7 @@ const Marketplace = () => {
       }
 
       // Registry filter
-      if (filters.selectedRegistries.length > 0 && !filters.selectedRegistries.includes(project.registry)) {
+      if (filters.selectedRegistries.length > 0 && !filters.selectedRegistries.includes(project.registry ?? "")) {
         return false;
       }
 

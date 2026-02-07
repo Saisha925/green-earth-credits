@@ -8,8 +8,15 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    open: true,
     hmr: {
       overlay: false,
+    },
+    proxy: {
+      "/server": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
     },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),

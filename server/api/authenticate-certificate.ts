@@ -150,6 +150,8 @@ const handler = async (req: IncomingMessage, res: ServerResponse) => {
     return;
   }
 
+  let tempFilePath: string | undefined;
+
   try {
     const { file } = await parseForm(req);
     if (!file) {
@@ -157,8 +159,10 @@ const handler = async (req: IncomingMessage, res: ServerResponse) => {
       return;
     }
 
+    tempFilePath = file.filepath;
+
     if (!file.mimetype || !file.mimetype.includes("pdf")) {
-      sendJson(res, 200, { success: false, error: "Unsupported file type" });
+      sendJson(res, 200, { success: false, error: "Unsupported file type. Please upload a PDF certificate." });
       return;
     }
 
@@ -167,13 +171,14 @@ const handler = async (req: IncomingMessage, res: ServerResponse) => {
     const certificate = extractCertificateFields(pdfText);
 
     if (!Object.keys(certificate).length) {
-      sendJson(res, 200, { success: false, error: "Unable to extract certificate fields" });
+      sendJson(res, 200, { success: false, error: "Unable to extract certificate fields from PDF" });
       return;
     }
 
     const listings = await fetchCarbonmarkListings();
     const result = authenticateCertificate(certificate, listings);
 
+    // Only return success when the certificate actually matches (confidence >= 0.75)
     if (!result.authenticated) {
       sendJson(res, 200, { success: false, data: { certificate, result } });
       return;
@@ -188,6 +193,10 @@ const handler = async (req: IncomingMessage, res: ServerResponse) => {
     });
   } catch (error) {
     sendJson(res, 500, { success: false, error: (error as Error).message });
+  } finally {
+    if (tempFilePath) {
+      await fs.unlink(tempFilePath).catch(() => {});
+    }
   }
 };
 
