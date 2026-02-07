@@ -20,9 +20,15 @@ export const NewsSection = () => {
               <p className="text-sm text-muted-foreground mt-1">{error}</p>
             )}
           </div>
-          <Button variant="outline" className="shrink-0">
-            View All News
-            <ArrowRight className="ml-2 h-4 w-4" />
+          <Button variant="outline" className="shrink-0" asChild>
+            <a
+              href="https://news.google.com/search?q=carbon%20credits%20OR%20carbon%20footprint"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View All News
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </a>
           </Button>
         </div>
 
