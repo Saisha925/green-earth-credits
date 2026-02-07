@@ -215,6 +215,7 @@ const Dashboard = () => {
       </main>
 
       <Footer />
+      <ChatbotWidget />
     </div>
   );
 };

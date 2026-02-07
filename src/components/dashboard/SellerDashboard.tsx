@@ -98,6 +98,7 @@ export const SellerDashboard = () => {
   const totalRevenue = soldListings.reduce((sum, l) => sum + l.credits * Number(l.price_per_tonne), 0);
 
   return (
+  <>
     <div className="space-y-6">
       {/* Seller Stats */}
       <div className="grid md:grid-cols-3 gap-6">
@@ -107,8 +108,19 @@ export const SellerDashboard = () => {
               <p className="text-sm text-muted-foreground">Listed Credits</p>
               <p className="text-3xl font-bold text-gradient">{totalListed.toLocaleString()} t</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Store className="w-6 h-6 text-primary" />
+            <div className="flex-1">
+  <p className="font-medium text-foreground">
+    {pendingRequests.length} New Retirement Request{pendingRequests.length > 1 ? "s" : ""}
+  </p>
+  <p className="text-sm text-muted-foreground">
+    Upload proof to release payment
+  </p>
+</div>
+
+<div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+  <Store className="w-6 h-6 text-primary" />
+</div>
+
             </div>
           </div>
         </div>
@@ -158,6 +170,46 @@ export const SellerDashboard = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {retirementRequests.map((request) => (
+                <TableRow key={request.id}>
+                  <TableCell className="font-medium">
+                    {request.projectName}
+                  </TableCell>
+                  <TableCell>{request.buyerName}</TableCell>
+                  <TableCell>{request.tonnes} t</TableCell>
+
+                  <TableCell>
+                    {request.status === "pending" &&
+                    countdowns[request.id] !== undefined ? (
+                      <span className="text-accent-foreground font-mono">
+                        {formatCountdown(countdowns[request.id])}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+
+                  <TableCell>
+                    {getStatusBadge(request.status)}
+                  </TableCell>
+
+                  <TableCell>
+                    {request.status === "pending" && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleUploadProof(request.id)}
+                        className="gradient-primary text-primary-foreground"
+                      >
+                        <Upload className="w-3 h-3 mr-1" />
+                        Upload Proof
+                      </Button>
+                    )}
+
+                    {request.status === "verified" && (
+                      <span className="text-sm text-primary">
+                        Payment Released
+                      </span>
+                    )}
               {listings.map((listing) => (
                 <TableRow key={listing.id}>
                   <TableCell className="font-medium">{listing.project_name}</TableCell>
@@ -263,5 +315,9 @@ export const SellerDashboard = () => {
         </>
       )}
     </div>
-  );
+
+    
+  </>
+);
+
 };

@@ -17,7 +17,7 @@ def get_groq_client() -> Groq:
 def llm_chat(system_prompt: str, user_prompt: str, temperature: float = TEMPERATURE, max_tokens: int = MAX_TOKENS) -> str:
     client = get_groq_client()
     response = client.chat.completions.create(
-        model=MODEL_NAME,
+        model="llama-3.1-8b-instant",
         temperature=temperature,
         max_tokens=max_tokens,
         messages=[
