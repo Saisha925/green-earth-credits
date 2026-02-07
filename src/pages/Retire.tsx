@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDemoMode } from "@/contexts/DemoModeContext";
 import { calculateRetirementFees, PLATFORM_FEE_PERCENTAGE } from "@/lib/platformFees";
+import { supabase } from "@/integrations/supabase/client";
+import { useProfile } from "@/hooks/useProfile";
 
 const projectData = {
   id: "1",
@@ -32,8 +34,9 @@ const Retire = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
+  const { profile } = useProfile();
   const { isDemoMode, addRetirementRequest, demoRole } = useDemoMode();
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [tonnes, setTonnes] = useState(1);
   const [beneficiary, setBeneficiary] = useState("");
@@ -53,28 +56,59 @@ const Retire = () => {
     }
 
     setIsLoading(true);
-    
-    // Simulate retirement
-    setTimeout(() => {
-      setIsLoading(false);
-      
-      if (isDemoMode) {
-        // Add to demo retirement requests
+
+    if (isDemoMode) {
+      // Demo mode — add to demo context
+      setTimeout(() => {
         addRetirementRequest({
           projectName: projectData.title,
           tonnes,
-          buyerName: beneficiary
+          buyerName: beneficiary,
         });
-        
+        setIsLoading(false);
         toast.success("Retirement requested. Payment held securely.", {
-          description: "Switch to Seller role to process verification."
+          description: "Switch to Seller role to process verification.",
         });
-      } else {
-        toast.success("Carbon credits retired successfully!");
-      }
-      
-      navigate("/profile");
-    }, 2000);
+        navigate("/profile");
+      }, 2000);
+      return;
+    }
+
+    // Real mode — save to database
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
+    const certificateId = `CERT-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+    const { error } = await supabase.from("retirement_records").insert({
+      buyer_id: user.id,
+      project_name: projectData.title,
+      seller_name: "Marketplace Seller",
+      tonnes,
+      price_per_tonne: projectData.pricePerTonne,
+      credit_subtotal: fees.creditSubtotal,
+      platform_fee_percentage: PLATFORM_FEE_PERCENTAGE,
+      platform_fee_amount: fees.platformFeeAmount,
+      total_amount_paid: fees.totalAmountPaid,
+      seller_amount: fees.sellerAmount,
+      beneficiary_name: beneficiary,
+      message,
+      certificate_id: certificateId,
+      status: "retired",
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      toast.error("Failed to retire credits. Please try again.");
+      console.error("Retirement error:", error);
+      return;
+    }
+
+    toast.success("Carbon credits retired successfully!");
+    navigate("/profile");
   };
 
   const isAuthenticated = user || isDemoMode;
@@ -108,13 +142,9 @@ const Retire = () => {
                       <p className="font-medium text-destructive">Authentication Required</p>
                       <p className="text-sm text-muted-foreground mt-1">
                         Please{" "}
-                        <Link to="/login" className="text-primary hover:underline">
-                          log in
-                        </Link>{" "}
+                        <Link to="/login" className="text-primary hover:underline">log in</Link>{" "}
                         or{" "}
-                        <Link to="/register" className="text-primary hover:underline">
-                          sign up
-                        </Link>{" "}
+                        <Link to="/register" className="text-primary hover:underline">sign up</Link>{" "}
                         to retire carbon credits.
                       </p>
                     </div>
@@ -195,7 +225,7 @@ const Retire = () => {
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
                     <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                     <span>
-                      Do not include personally identifiable information in your message. 
+                      Do not include personally identifiable information in your message.
                       This will be publicly visible on the blockchain.
                     </span>
                   </div>
@@ -328,12 +358,11 @@ const Retire = () => {
                   </p>
                 )}
 
-                {/* Success Message */}
                 {isAuthenticated && (
                   <div className="flex items-start gap-2 text-xs text-muted-foreground">
                     <CheckCircle className="w-4 h-4 mt-0.5 text-primary shrink-0" />
                     <span>
-                      By retiring, you're permanently removing these carbon credits from 
+                      By retiring, you're permanently removing these carbon credits from
                       circulation and contributing to climate action.
                     </span>
                   </div>
