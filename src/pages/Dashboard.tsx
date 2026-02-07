@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SellerDashboard } from "@/components/dashboard/SellerDashboard";
 import { useDemoMode } from "@/contexts/DemoModeContext";
+import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRetirementRecords } from "@/hooks/useListings";
 import {
   ShoppingCart,
   Store,
@@ -67,7 +70,17 @@ const dashboardCards = [
 
 const Dashboard = () => {
   const { isDemoMode, demoRole } = useDemoMode();
-  const activeRole = isDemoMode ? demoRole : "buyer";
+  const { profile, role } = useProfile();
+  const { user } = useAuth();
+  const { records } = useRetirementRecords();
+
+  // Use real role when authenticated, demo role for demo mode
+  const activeRole = isDemoMode ? demoRole : (role || "buyer");
+  const displayName = profile?.full_name || user?.email?.split("@")[0] || "User";
+
+  // Calculate real stats from retirement records
+  const totalRetired = records.reduce((sum: number, r: any) => sum + r.tonnes, 0);
+  const totalInvestment = records.reduce((sum: number, r: any) => sum + Number(r.total_amount_paid), 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -75,7 +88,7 @@ const Dashboard = () => {
 
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4">
-          {/* Breadcrumb Navigation - Issue 7 Fix */}
+          {/* Breadcrumb Navigation */}
           <Breadcrumb className="mb-6">
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -95,9 +108,11 @@ const Dashboard = () => {
 
           {/* Header */}
           <div className="mb-8">
-            <h1 className="font-display text-4xl font-bold mb-2">Dashboard</h1>
+            <h1 className="font-display text-4xl font-bold mb-2">
+              Welcome, {displayName}
+            </h1>
             <p className="text-muted-foreground">
-              Welcome back! Manage your carbon credits and explore the marketplace.
+              Manage your carbon credits and explore the marketplace.
             </p>
           </div>
 
@@ -121,7 +136,7 @@ const Dashboard = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Retired</p>
-                      <p className="text-3xl font-bold text-gradient">142 t</p>
+                      <p className="text-3xl font-bold text-gradient">{totalRetired} t</p>
                     </div>
                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                       <Leaf className="w-6 h-6 text-primary" />
@@ -132,7 +147,7 @@ const Dashboard = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">CO₂ Offset</p>
-                      <p className="text-3xl font-bold text-gradient">142 t</p>
+                      <p className="text-3xl font-bold text-gradient">{totalRetired} t</p>
                     </div>
                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                       <TrendingUp className="w-6 h-6 text-primary" />
@@ -143,7 +158,7 @@ const Dashboard = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Investment</p>
-                      <p className="text-3xl font-bold text-gradient">$2,847</p>
+                      <p className="text-3xl font-bold text-gradient">${totalInvestment.toFixed(2)}</p>
                     </div>
                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                       <ShoppingCart className="w-6 h-6 text-primary" />
@@ -154,66 +169,7 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="seller" className="mt-8">
-              {isDemoMode ? (
-                <SellerDashboard />
-              ) : (
-                <>
-                  {/* Seller Stats */}
-                  <div className="grid md:grid-cols-3 gap-6 mb-8">
-                    <div className="glass-card rounded-2xl p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Listed Credits</p>
-                          <p className="text-3xl font-bold text-gradient">5,000 t</p>
-                        </div>
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                          <Store className="w-6 h-6 text-primary" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="glass-card rounded-2xl p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Sold</p>
-                          <p className="text-3xl font-bold text-gradient">1,250 t</p>
-                        </div>
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                          <TrendingUp className="w-6 h-6 text-primary" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="glass-card rounded-2xl p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Revenue</p>
-                          <p className="text-3xl font-bold text-gradient">$18,750</p>
-                        </div>
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                          <ShoppingCart className="w-6 h-6 text-primary" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Quick Action for Seller */}
-                  <div className="glass-card rounded-2xl p-6 mb-8 glow-green-subtle">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                      <div>
-                        <h3 className="font-semibold text-lg mb-1">Ready to list more credits?</h3>
-                        <p className="text-muted-foreground text-sm">
-                          Authenticate your certificates and start selling on the marketplace.
-                        </p>
-                      </div>
-                      <Link to="/authenticate">
-                        <Button className="gradient-primary text-primary-foreground btn-glow">
-                          Authenticate Certificate
-                          <ArrowRight className="w-4 h-4 ml-2" />
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                </>
-              )}
+              <SellerDashboard />
             </TabsContent>
           </Tabs>
 

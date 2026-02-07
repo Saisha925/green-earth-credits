@@ -16,6 +16,8 @@ import { Separator } from "@/components/ui/separator";
 import { LocationPicker } from "@/components/map/LocationPicker";
 import { Store, MapPin, DollarSign, Calendar, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const categories = [
   "Reforestation",
@@ -35,6 +37,7 @@ const registries = [
 
 const Sell = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     projectName: "",
@@ -46,6 +49,7 @@ const Sell = () => {
     pricePerTonne: "",
     latitude: "",
     longitude: "",
+    country: "",
   });
 
   const handleLocationChange = (lat: number, lng: number) => {
@@ -59,22 +63,45 @@ const Sell = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate form
-    if (!formData.projectName || !formData.ownerName || !formData.category || 
-        !formData.registry || !formData.credits || !formData.vintageYear || 
+    if (!formData.projectName || !formData.ownerName || !formData.category ||
+        !formData.registry || !formData.credits || !formData.vintageYear ||
         !formData.pricePerTonne) {
       toast.error("Please fill in all required fields");
       return;
     }
 
+    if (!user) {
+      toast.error("Please log in to list credits");
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate listing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Save listing to database
+    const { error } = await supabase.from("credit_listings").insert({
+      seller_id: user.id,
+      project_name: formData.projectName,
+      description: `Listed by ${formData.ownerName}`,
+      category: formData.category,
+      registry: formData.registry,
+      credits: parseInt(formData.credits),
+      vintage_year: parseInt(formData.vintageYear),
+      price_per_tonne: parseFloat(formData.pricePerTonne),
+      latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+      longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+      country: formData.country,
+    });
 
     setIsLoading(false);
+
+    if (error) {
+      toast.error("Failed to list credits. Please try again.");
+      console.error("Listing error:", error);
+      return;
+    }
+
     toast.success("Your credits have been listed successfully!");
-    navigate("/profile");
+    navigate("/home");
   };
 
   return (
@@ -206,6 +233,19 @@ const Sell = () => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <Separator />
+
+            {/* Country */}
+            <div className="space-y-2">
+              <Label htmlFor="country">Country</Label>
+              <Input
+                id="country"
+                placeholder="e.g., Brazil"
+                value={formData.country}
+                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+              />
             </div>
 
             <Separator />

@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      credit_listings: {
+        Row: {
+          category: string
+          country: string | null
+          created_at: string
+          credits: number
+          description: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          price_per_tonne: number
+          project_name: string
+          registry: string
+          seller_id: string
+          status: string
+          updated_at: string
+          vintage_year: number
+        }
+        Insert: {
+          category: string
+          country?: string | null
+          created_at?: string
+          credits: number
+          description?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          price_per_tonne: number
+          project_name: string
+          registry: string
+          seller_id: string
+          status?: string
+          updated_at?: string
+          vintage_year: number
+        }
+        Update: {
+          category?: string
+          country?: string | null
+          created_at?: string
+          credits?: number
+          description?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          price_per_tonne?: number
+          project_name?: string
+          registry?: string
+          seller_id?: string
+          status?: string
+          updated_at?: string
+          vintage_year?: number
+        }
+        Relationships: []
+      }
       esg_reports: {
         Row: {
           anti_corruption_policy: boolean | null
@@ -158,15 +212,144 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      retirement_records: {
+        Row: {
+          beneficiary_name: string
+          buyer_id: string
+          certificate_id: string
+          created_at: string
+          credit_subtotal: number
+          id: string
+          listing_id: string | null
+          message: string | null
+          platform_fee_amount: number
+          platform_fee_percentage: number
+          price_per_tonne: number
+          project_name: string
+          seller_amount: number
+          seller_name: string | null
+          status: string
+          tonnes: number
+          total_amount_paid: number
+        }
+        Insert: {
+          beneficiary_name: string
+          buyer_id: string
+          certificate_id: string
+          created_at?: string
+          credit_subtotal: number
+          id?: string
+          listing_id?: string | null
+          message?: string | null
+          platform_fee_amount: number
+          platform_fee_percentage?: number
+          price_per_tonne: number
+          project_name: string
+          seller_amount: number
+          seller_name?: string | null
+          status?: string
+          tonnes: number
+          total_amount_paid: number
+        }
+        Update: {
+          beneficiary_name?: string
+          buyer_id?: string
+          certificate_id?: string
+          created_at?: string
+          credit_subtotal?: number
+          id?: string
+          listing_id?: string | null
+          message?: string | null
+          platform_fee_amount?: number
+          platform_fee_percentage?: number
+          price_per_tonne?: number
+          project_name?: string
+          seller_amount?: number
+          seller_name?: string | null
+          status?: string
+          tonnes?: number
+          total_amount_paid?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retirement_records_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "credit_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "buyer" | "seller"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -293,6 +476,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["buyer", "seller"],
+    },
   },
 } as const
