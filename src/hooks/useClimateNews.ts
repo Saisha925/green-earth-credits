@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 export interface NewsItem {
   id: number;
@@ -10,6 +10,10 @@ export interface NewsItem {
   url: string;
   source: string;
 }
+
+const NEWS_QUERY = '"carbon credits" OR "carbon footprint"';
+const GOOGLE_NEWS_URL = `https://news.google.com/rss/search?q=${encodeURIComponent(NEWS_QUERY)}&hl=en-US&gl=US&ceid=US:en`;
+const REFRESH_INTERVAL_MS = 1000 * 60 * 30; // 30 minutes
 
 // Fallback news for when API fails or is not configured
 const fallbackNews: NewsItem[] = [
@@ -45,41 +49,97 @@ const fallbackNews: NewsItem[] = [
   },
 ];
 
+const getCategory = (title: string, description: string) => {
+  const text = `${title} ${description}`.toLowerCase();
+
+  if (text.includes("market") || text.includes("trade") || text.includes("price")) return "Market Update";
+  if (text.includes("policy") || text.includes("regulation") || text.includes("law")) return "Policy";
+  if (text.includes("project") || text.includes("offset") || text.includes("reforestation")) return "Projects";
+  if (text.includes("emission") || text.includes("footprint")) return "Emissions";
+
+  return "Climate News";
+};
+
+const toFormattedDate = (rawDate: string | null) => {
+  if (!rawDate) return new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+  const date = new Date(rawDate);
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
+const parseGoogleNewsRss = (xmlString: string): NewsItem[] => {
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+  const items = Array.from(xmlDoc.querySelectorAll("item")).slice(0, 6);
+
+  return items.map((item, index) => {
+    const title = item.querySelector("title")?.textContent?.trim() || "Untitled story";
+    const link = item.querySelector("link")?.textContent?.trim() || "#";
+    const description = item.querySelector("description")?.textContent?.trim() || "Latest coverage on climate and carbon markets.";
+    const pubDate = item.querySelector("pubDate")?.textContent ?? null;
+    const source = item.querySelector("source")?.textContent?.trim() || "Google News";
+
+    return {
+      id: index + 1,
+      title,
+      excerpt: description.replace(/<[^>]*>/g, "").slice(0, 180),
+      date: toFormattedDate(pubDate),
+      category: getCategory(title, description),
+      image: fallbackNews[index % fallbackNews.length].image,
+      url: link,
+      source,
+    };
+  });
+};
+
 export const useClimateNews = () => {
   const [news, setNews] = useState<NewsItem[]>(fallbackNews);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchNews = async () => {
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        // Try to fetch from a news API if configured
-        // For demo purposes, we'll use fallback data with dynamic dates
-        const today = new Date();
-        const dynamicNews = fallbackNews.map((item, index) => ({
-          ...item,
-          date: new Date(today.getTime() - index * 2 * 24 * 60 * 60 * 1000)
-            .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-        }));
-        
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        setNews(dynamicNews);
-      } catch (err) {
-        console.error("Failed to fetch climate news:", err);
-        setError("Unable to load latest news. Showing recent headlines.");
-        setNews(fallbackNews);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchNews = useCallback(async () => {
+    setError(null);
 
-    fetchNews();
+    try {
+      const proxiedRssUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(GOOGLE_NEWS_URL)}`;
+      const response = await fetch(proxiedRssUrl);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch feed. Status: ${response.status}`);
+      }
+
+      const xml = await response.text();
+      const latestNews = parseGoogleNewsRss(xml);
+
+      if (latestNews.length === 0) {
+        throw new Error("Feed returned no articles");
+      }
+
+      setNews(latestNews);
+    } catch (err) {
+      console.error("Failed to fetch climate news:", err);
+      setError("Unable to load live news right now. Showing recent headlines.");
+      setNews(fallbackNews);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchNews();
+
+    const intervalId = window.setInterval(() => {
+      fetchNews();
+    }, REFRESH_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [fetchNews]);
 
   return { news, isLoading, error };
 };
