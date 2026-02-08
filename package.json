@@ -8,6 +8,9 @@
     "dev:api": "tsx server/run-api-server.ts",
     "dev:frontend": "vite",
     "build": "vite build",
+    "compile": "hardhat compile",
+    "deploy:sepolia": "hardhat run scripts/deploy.cjs --network sepolia",
+    "deploy:local": "hardhat run scripts/deploy.cjs --network hardhat",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -15,6 +18,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "dotenv": "^16.4.5",
+    "@storacha/client": "^2.0.0",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -75,6 +80,9 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.0.2",
+    "hardhat": "^2.22.0",
     "concurrently": "^9.1.0",
     "tsx": "^4.19.2",
     "@eslint/js": "^9.32.0",

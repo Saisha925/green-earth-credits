@@ -52,8 +52,14 @@ const handler = async (req: IncomingMessage, res: ServerResponse) => {
     }
 
     const listing = body.listing;
-    const certificate = (body.authentication as { certificate?: Record<string, unknown> | null })?.certificate ?? null;
-    const authentication = (body.authentication as { result?: Record<string, unknown> | null })?.result ?? null;
+    const auth = body.authentication as {
+      certificate?: Record<string, unknown> | null;
+      result?: Record<string, unknown> | null;
+      storachaUrl?: string | null;
+    } | undefined;
+    const certificate = auth?.certificate ?? null;
+    const authentication = auth?.result ?? null;
+    const storachaUrl = auth?.storachaUrl ?? null;
 
     const newListing: MarketplaceListing = {
       id: crypto.randomUUID(),
@@ -74,6 +80,7 @@ const handler = async (req: IncomingMessage, res: ServerResponse) => {
       },
       certificate,
       authentication,
+      ...(storachaUrl && { storachaUrl }),
       createdAt: new Date().toISOString(),
     };
 

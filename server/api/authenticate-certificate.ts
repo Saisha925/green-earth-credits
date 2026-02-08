@@ -184,11 +184,23 @@ const handler = async (req: IncomingMessage, res: ServerResponse) => {
       return;
     }
 
+    // Optionally upload certificate PDF to Storacha for decentralized storage
+    let storachaUrl: string | null = null;
+    try {
+      const { uploadToStoracha } = await import("../lib/storacha");
+      const originalName = file.originalFilename || "certificate.pdf";
+      const uploaded = await uploadToStoracha(buffer, originalName, file.mimetype || "application/pdf");
+      if (uploaded) storachaUrl = uploaded.url;
+    } catch {
+      // non-fatal: auth still succeeds without Storacha
+    }
+
     sendJson(res, 200, {
       success: true,
       data: {
         certificate,
         result,
+        ...(storachaUrl && { storachaUrl }),
       },
     });
   } catch (error) {

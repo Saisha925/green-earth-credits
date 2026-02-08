@@ -141,9 +141,10 @@ const mockProjects = [
   },
 ];
 
+const currentYear = new Date().getFullYear();
 const defaultFilters: FilterState = {
   priceRange: [0, 100],
-  vintageRange: [2015, 2024],
+  vintageRange: [2015, currentYear],
   selectedCountries: [],
   selectedCategories: [],
   selectedRegistries: [],
@@ -158,22 +159,32 @@ const Marketplace = () => {
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [dynamicListings, setDynamicListings] = useState<MarketplaceProject[]>([]);
 
-  useEffect(() => {
-    const loadListings = async () => {
-      try {
-        const response = await fetch("/server/api/marketplace-listings");
-        if (!response.ok) return;
-        const payload = await response.json();
-        if (payload.success && Array.isArray(payload.data)) {
-          setDynamicListings(payload.data);
-        }
-      } catch (error) {
-        console.error("Failed to load marketplace listings:", error);
+  const loadListings = useCallback(async () => {
+    try {
+      const response = await fetch("/server/api/marketplace-listings");
+      if (!response.ok) {
+        console.error("Marketplace API error:", response.status);
+        return;
       }
-    };
-
-    loadListings();
+      const payload = await response.json();
+      if (payload.success && Array.isArray(payload.data)) {
+        setDynamicListings(payload.data);
+      }
+    } catch (error) {
+      console.error("Failed to load marketplace listings:", error);
+    }
   }, []);
+
+  useEffect(() => {
+    loadListings();
+  }, [loadListings]);
+
+  // Refetch when user returns to this tab (e.g. after adding a listing on Sell)
+  useEffect(() => {
+    const onFocus = () => loadListings();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [loadListings]);
 
   const handleFilterChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);
@@ -241,7 +252,7 @@ const Marketplace = () => {
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filters.priceRange[0] !== 0 || filters.priceRange[1] !== 100) count++;
-    if (filters.vintageRange[0] !== 2015 || filters.vintageRange[1] !== 2024) count++;
+    if (filters.vintageRange[0] !== 2015 || filters.vintageRange[1] !== currentYear) count++;
     if (filters.selectedCountries.length > 0) count++;
     if (filters.selectedCategories.length > 0) count++;
     if (filters.selectedRegistries.length > 0) count++;

@@ -10,6 +10,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
+const currentYear = new Date().getFullYear();
 const countries = ["Brazil", "Indonesia", "Kenya", "Colombia", "Vietnam", "Peru"];
 const categories = ["Reforestation", "Avoided Deforestation", "Blue Carbon", "Renewable Energy", "Clean Cookstoves"];
 const registries = ["Verra", "Gold Standard", "American Carbon Registry", "Climate Action Reserve"];
@@ -54,7 +55,7 @@ interface FilterPanelProps {
 
 export const FilterPanel = ({ onClose, isMobile, filters, onFilterChange }: FilterPanelProps) => {
   const [priceRange, setPriceRange] = useState(filters?.priceRange || [0, 100]);
-  const [vintageRange, setVintageRange] = useState(filters?.vintageRange || [2015, 2024]);
+  const [vintageRange, setVintageRange] = useState(filters?.vintageRange || [2015, currentYear]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>(filters?.selectedCountries || []);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(filters?.selectedCategories || []);
   const [selectedRegistries, setSelectedRegistries] = useState<string[]>(filters?.selectedRegistries || []);
@@ -100,7 +101,7 @@ export const FilterPanel = ({ onClose, isMobile, filters, onFilterChange }: Filt
 
   const handleClearAll = () => {
     setPriceRange([0, 100]);
-    setVintageRange([2015, 2024]);
+    setVintageRange([2015, currentYear]);
     setSelectedCountries([]);
     setSelectedCategories([]);
     setSelectedRegistries([]);
@@ -111,7 +112,7 @@ export const FilterPanel = ({ onClose, isMobile, filters, onFilterChange }: Filt
     priceRange[0] !== 0 || 
     priceRange[1] !== 100 ||
     vintageRange[0] !== 2015 ||
-    vintageRange[1] !== 2024 ||
+    vintageRange[1] !== currentYear ||
     selectedCountries.length > 0 ||
     selectedCategories.length > 0 ||
     selectedRegistries.length > 0 ||
@@ -204,7 +205,7 @@ export const FilterPanel = ({ onClose, isMobile, filters, onFilterChange }: Filt
             value={vintageRange}
             onValueChange={(v) => setVintageRange(v as [number, number])}
             min={2010}
-            max={2024}
+            max={currentYear}
             step={1}
             className="mt-2"
           />

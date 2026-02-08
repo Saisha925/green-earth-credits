@@ -28,4 +28,16 @@ dist-ssr
 
 # Environment files
 .env
+.env.*
+!.env.example
 ML5/backend/ChatBot/.env
+
+# Storacha pointer (CID updated on write; keep local)
+server/data/storacha-listings-cid.txt
+
+# Hardhat
+cache/
+artifacts/
+typechain-types/
+coverage/
+coverage.json
